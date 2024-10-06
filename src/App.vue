@@ -10,6 +10,7 @@
           <li><a href="#" @click="handleProfileClick">個人檔案</a></li>
           <li><a href="#" @click="handleLatestOffersClick">最新優惠</a></li>
           <li><a href="#" @click="handleDietarySuggestionsClick">個人飲食建議</a></li>
+          <li><a href="#" @click.prevent="handleSignOutClick">登出</a></li>
         </ul>
       </nav>
     </div>
@@ -17,9 +18,19 @@
     <div class="main-content">
       <header>
         <div class="menu-icon" @click="toggleSidebar">☰</div>
+        <div class="auth-buttons">
+          <router-link to="/Login">
+            <button>登入</button>
+          </router-link>
+          <router-link to="/register">
+            <button>註冊</button>
+          </router-link>
+        </div>
         <div class="location-selector">
-          <select>
-            <option>台中市 / 沙鹿區</option>
+          <select v-model="maincat_selected">
+            <option v-for="maincat in json_maincats" :key="maincat.id" :value="maincat.id">
+                {{ maincat.name }}
+            </option>
           </select>
         </div>
         <div class="search-bar">
@@ -53,40 +64,92 @@
           <button @click="handleNutritionQuery">查詢</button>
         </div>
 
-        <div class="latest-offers">最新優惠</div>
+        <!-- 最新優惠區域 -->
+        <div class="latest-offers">
+          <h2>最新優惠</h2>
+          <ul>
+            <li v-for="offer in offers" :key="offer.id">
+              {{ offer.title }} - {{ offer.description }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-export default {
-  data() {
-    return {
-      sidebarActive: false,
-    };
-  },
-  methods: {
-    toggleSidebar() {
-      this.sidebarActive = !this.sidebarActive;
+  import { onMounted, ref } from "vue";
+  import axios from "axios";
+  
+  export default {
+    setup() {
+      const sidebarActive = ref(false);
+      const json_maincats = ref([]); 
+      const maincat_selected = ref(""); // 用於存儲選中的主類別
+  
+      const toggleSidebar = () => {
+        sidebarActive.value = !sidebarActive.value;
+      };
+  
+      const handleProfileClick = () => {
+        alert('個人檔案被點擊');
+      };
+  
+      const handleLatestOffersClick = () => {
+        alert('最新優惠被點擊');
+      };
+  
+      const handleDietarySuggestionsClick = () => {
+        alert('個人飲食建議被點擊');
+      };
+  
+      const handleNutritionQuery = () => {
+        alert('營養查詢被點擊');
+      };
+  
+      const handleSignOutClick = async () => {
+        if (confirm("確定要登出嗎？")) {
+          try {
+            await axios.post('/logout');
+            this.$router.push('/login');
+          } catch (error) {
+            console.error('登出失敗:', error);
+          }
+        }
+      };
+  
+      const get_all_maincat = async () => {
+        try {
+          const response = await axios.get("http://127.0.0.1:5000/maincat");
+          json_maincats.value = response.data;  // 設定主類別資料
+          if (json_maincats.value.length > 0) {
+            maincat_selected.value = json_maincats.value[0].name; // 預設選擇第一個
+          }
+        } catch (error) {
+          console.error("獲取主類別失敗:", error);
+        }
+      };
+    
+      onMounted(() => {
+        get_all_maincat(); // 在組件掛載時調用函數
+      });
+  
+      return {
+        sidebarActive,
+        json_maincats,
+        maincat_selected,
+        toggleSidebar,
+        handleProfileClick,
+        handleLatestOffersClick,
+        handleDietarySuggestionsClick,
+        handleNutritionQuery,
+        handleSignOutClick,
+      };
     },
-    handleProfileClick() {
-      alert('個人檔案被點擊');
-    },
-    handleLatestOffersClick() {
-      alert('最新優惠被點擊');
-    },
-    handleDietarySuggestionsClick() {
-      alert('個人飲食建議被點擊');
-    },
-    handleNutritionQuery() {
-      alert('營養查詢被點擊');
-    },
-  },
-};
-
-</script>
-
+  };
+  </script>
+  
 <style scoped>
 .root {
   display: flex;
@@ -248,6 +311,10 @@ header {
   font-size: 24px; 
 }
 
+.auth-buttons {
+  display: flex;  
+  color: #000000;                                            
+}
 
 @media (max-width: 768px) {
   .sidebar {

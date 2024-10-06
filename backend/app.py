@@ -1,32 +1,31 @@
-from flask import Flask, jsonify
+
+from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import select
-from sqlalchemy import create_engine
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import create_engine, select
+from flask_cors import CORS
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/cclo'  # 請根據您的配置調整
+CORS(app)  # 允許所有來源
+
+# 資料庫設置
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫 URI
+app.config['SECRET_KEY'] = '51718' 
 db = SQLAlchemy(app)
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 
-class Maincat(db.Model):
-    __tablename__ = 'maincat'  # 數據庫中的表名
+# 主類別
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+# 創建數據表
+with app.app_context():
+    db.create_all()
 
-def all_route(app):
-    @app.route("/maincat", methods=['GET'])
-    def get_all_maincat_json():
-        # 使用 SQLAlchemy 的 select 函數
-        statement = select(Maincat)
-        # 連接並執行查詢
-        with engine.connect() as connection:
-            rows = connection.execute(statement).scalars().all()
+# 根路由
+@app.route('/')
+def home():
+    return "歡迎來到點餐系統！"
 
-        res = [{"id": cat.id, "name": cat.name} for cat in rows]
-        return jsonify(res)  # 返回 JSON 格式的響應
 
-all_route(app)
 
 if __name__ == '__main__':
     app.run(debug=True)

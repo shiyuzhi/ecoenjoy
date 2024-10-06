@@ -1,7 +1,6 @@
 <template>
   <div class="delivery">
     <h2>外送</h2>
-    
     <select v-model="selectedRestaurant" @change="fetchMenu" class="restaurant-select">
       <option disabled value="">選擇餐廳</option>
       <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">
