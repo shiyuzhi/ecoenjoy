@@ -3,12 +3,11 @@
     <div class="sidebar" :class="{ active: sidebarActive }">
       <div class="user-info">
         <div class="user-icon">👤</div>
-        <div class="username"><a href="#" @click="handleUsernameClick">用戶名</a></div>
+        <div class="username"><a href="#" @click="handleUsernameClick">使用者名稱</a></div>
       </div>
       <nav>
         <ul>
-          <li><a href="#" @click="handleProfileClick">個人檔案</a></li>
-          <li><a href="#" @click="handleLatestOffersClick">最新優惠</a></li>
+          <li><router-link to="/profile">會員資料</router-link></li>
           <li><a href="#" @click="handleDietarySuggestionsClick">個人飲食建議</a></li>
           <li><a href="#" @click.prevent="handleSignOutClick">登出</a></li>
         </ul>
@@ -87,27 +86,30 @@
       const sidebarActive = ref(false);
       const json_maincats = ref([]); 
       const maincat_selected = ref(""); // 用於存儲選中的主類別
+      const offers = ref(""); 
   
       const toggleSidebar = () => {
         sidebarActive.value = !sidebarActive.value;
       };
-  
+
       const handleProfileClick = () => {
-        alert('個人檔案被點擊');
-      };
-  
-      const handleLatestOffersClick = () => {
-        alert('最新優惠被點擊');
+            alert('個人資料被點擊');
       };
   
       const handleDietarySuggestionsClick = () => {
         alert('個人飲食建議被點擊');
       };
-  
+
       const handleNutritionQuery = () => {
-        alert('營養查詢被點擊');
+       alert('查詢按鈕被點擊');
       };
-  
+
+      const handleLatestOffersClick = () => {
+              alert('最新優惠被點擊');
+      };
+
+
+
       const handleSignOutClick = async () => {
         if (confirm("確定要登出嗎？")) {
           try {
@@ -120,25 +122,37 @@
       };
   
       const get_all_maincat = async () => {
-        try {
-          const response = await axios.get("http://127.0.0.1:5000/maincat");
-          json_maincats.value = response.data;  // 設定主類別資料
-          if (json_maincats.value.length > 0) {
-            maincat_selected.value = json_maincats.value[0].name; // 預設選擇第一個
-          }
-        } catch (error) {
-          console.error("獲取主類別失敗:", error);
+      try {
+        const response = await axios.get("http://127.0.0.1:5000/maincat");
+        json_maincats.value = response.data; // 設定主類別資料
+        if (json_maincats.value.length > 0) {
+          maincat_selected.value = json_maincats.value[0].id; // 預設選擇第一個類別
         }
-      };
+      } catch (error) {
+        console.error("獲取主類別失敗:", error);
+      }
+    };
+
+    //獲取優惠資料
+    const get_all_offers = async () => {
+      try {
+        const response = await axios.get("http://127.0.0.1:5000/offers"); // 獲取優惠資料
+        offers.value = response.data; // 設定優惠資料
+      } catch (error) {
+        console.error("獲取優惠資料失敗:", error);
+      }
+    };
     
       onMounted(() => {
-        get_all_maincat(); // 在組件掛載時調用函數
+        get_all_maincat(); //主類別
+        get_all_offers();// 獲取優惠資料
       });
   
       return {
         sidebarActive,
         json_maincats,
         maincat_selected,
+        offers, 
         toggleSidebar,
         handleProfileClick,
         handleLatestOffersClick,
@@ -148,7 +162,7 @@
       };
     },
   };
-  </script>
+</script>
   
 <style scoped>
 .root {
@@ -302,13 +316,34 @@ header {
 }
 
 .latest-offers {
-  height: 150px; 
-  background-color: #e0e0e0;
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px; 
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #ffffff; 
+  border: 2px solid black; 
+  border-radius: 10px; 
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.latest-offers h2 {
+  margin-bottom: 20px;
+}
+
+.offers-list {
+  padding: 0;
+}
+
+.offer-item {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  transition: background-color 0.3s;
+}
+
+.offer-item:last-child {
+  border-bottom: none;
+}
+
+.offer-item:hover {
+  background-color: #f0f0f0;
 }
 
 .auth-buttons {

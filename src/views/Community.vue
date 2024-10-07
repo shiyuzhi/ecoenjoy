@@ -58,7 +58,7 @@ export default {
 <style scoped>
 .community {
   padding: 20px;
-  background: linear-gradient(to right, #68cfff, #ff72a6); /* 淺藍色到淺橙色的漸變背景 */
+  background: linear-gradient(to right, #68cfff, #ff72a6); /* 漸變背景 */
   border-radius: 5px; 
   color: #333; 
 }

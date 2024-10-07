@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import Home from '../views/Home.vue'; 
 import Delivery from '../views/Delivery.vue';
 import Pickup from '../views/Pickup.vue';
 import Community from '../views/Community.vue';
@@ -10,6 +11,7 @@ import Register from '../views/Register.vue';
 
 
 const routes = [
+  {path: '/', name: 'Home',component: Home,},
   { path: '/delivery', component: Delivery },
   { path: '/pickup', component: Pickup },
   { path: '/community', component: Community },

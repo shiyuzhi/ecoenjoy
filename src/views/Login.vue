@@ -1,69 +1,89 @@
 <template>
-    <div class="login-container">
-      <h2 class="form-title">Sign In</h2>
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-group">
-          <label for="username">使用者名稱   </label>
-          <input type="text" v-model="username" id="username" required />
+  <div class="login-container">
+    <h2 class="form-title">Sign In</h2>
+    <form @submit.prevent="handleLogin" class="login-form">
+      <div class="form-group">
+        <label for="username">使用者名稱</label>
+        <input type="text" v-model="username" id="username" required />
+      </div>
+      <div class="form-group">
+        <label for="password">密碼</label>
+        <input type="password" v-model="password" id="password" required />
+      </div>
+      <div class="form-footer">
+        <div class="remember-me">
+          <input type="checkbox" id="remember" v-model="rememberMe" />
+          <label for="remember">記住我?</label>
         </div>
-        <div class="form-group">
-          <label for="password">密碼    </label>
-          <input type="password" v-model="password" id="password" required />
+        <a href="#" class="forgot-password">忘記密碼?</a>
+      </div>
+      <button type="submit" class="submit-button">SIGN IN</button>
+      <div class="social-login">
+        <p>使用社交媒體登入</p>
+        <div class="social-buttons">
+          <button @click="handleGoogleLogin" class="social-button google-button">
+            <i class="fab fa-google social-icon"></i> Google
+          </button>
+          <button @click="handleFbLogin" class="social-button fb-button">
+            <i class="fab fa-facebook social-icon"></i> Facebook
+          </button>
+          <button @click="handleLineLogin" class="social-button line-button">
+            <i class="fab fa-line social-icon"></i> Line
+          </button>
         </div>
-        <div class="form-footer">
-          <div class="remember-me">
-            <input type="checkbox" id="remember" v-model="rememberMe" />
-            <label for="remember">記住我?</label>
-          </div>
-          <a href="#" class="forgot-password">忘記密碼?</a>
-        </div>
-        <button type="submit" class="submit-button">SIGN IN</button>
-        <div class="social-login">
-          <p>使用社交媒體登入</p>
-          <div class="social-buttons">
-            <button @click="handleGoogleLogin" class="social-button google-button">
-              <i class="fab fa-google social-icon"></i> Google
-            </button>
-            <button @click="handleFbLogin" class="social-button fb-button">
-              <i class="fab fa-facebook social-icon"></i> Facebook
-            </button>
-            <button @click="handleLineLogin" class="social-button line-button">
-              <i class="fab fa-line social-icon"></i> Line
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </template>
-  
-  <script>
-  export default {
-    data() {
-      return {
-        username: '',
-        password: '',
-        rememberMe: false,
-      };
+      </div>
+    </form>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      username: '',
+      password: '',
+      rememberMe: false,
+    };
+  },
+  methods: {
+    async handleLogin() {
+      try {
+        const response = await axios.post('http://localhost:5000/login', {
+          username: this.username,
+          password: this.password,
+        });
+
+        if (response.data.success) {
+          alert(`登入成功！用戶名: ${this.username}`);
+          // 儲存 token 或用戶資料以便後續使用
+          // 例如: localStorage.setItem('token', response.data.token);
+        } else {
+          alert('登入失敗！請檢查您的使用者名稱和密碼。');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('發生錯誤，請稍後再試。');
+      }
     },
-    methods: {
-      handleLogin() {
-        alert(`登入成功！用戶名: ${this.username}`);
-        // 這裡可以加入登入 API 的調用
-      },
-      handleGoogleLogin() {
-        alert('使用 Google 登入');
-      },
-      handleFbLogin() {
-        alert('使用 Facebook 登入');
-      },
-      handleLineLogin() {
-        alert('使用 Line 登入');
-      },
+    handleGoogleLogin() {
+      alert('使用 Google 登入');
+      // 在這裡添加 Google 登入邏輯
     },
-  };
-  </script>
-  
-  <style scoped>
+    handleFbLogin() {
+      alert('使用 Facebook 登入');
+      // 在這裡添加 Facebook 登入邏輯
+    },
+    handleLineLogin() {
+      alert('使用 Line 登入');
+      // 在這裡添加 Line 登入邏輯
+    },
+  },
+};
+</script>
+
+<style scoped>
   .login-container {
     width: 350px;
     margin: 50px auto;
