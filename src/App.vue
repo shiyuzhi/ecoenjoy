@@ -93,7 +93,7 @@
       };
 
       const handleProfileClick = () => {
-            alert('個人資料被點擊');
+          alert('個人資料被點擊');
       };
   
       const handleDietarySuggestionsClick = () => {
@@ -101,11 +101,11 @@
       };
 
       const handleNutritionQuery = () => {
-       alert('查詢按鈕被點擊');
+        alert('查詢按鈕被點擊');
       };
 
       const handleLatestOffersClick = () => {
-              alert('最新優惠被點擊');
+         alert('最新優惠被點擊');
       };
 
 

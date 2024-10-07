@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify  
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
+from werkzeug.security import  check_password_hash
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 
@@ -59,6 +59,10 @@ def get_offers():
     return jsonify(offer_list)
 
 #註冊
+from flask_bcrypt import Bcrypt
+
+bcrypt = Bcrypt()
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -82,6 +86,21 @@ def register():
     return jsonify({'success': True, 'message': '註冊成功！'}), 201
 
 
+#登入
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    
+    username = data.get('username').strip()
+    password = data.get('password').strip()
+
+    user = User.query.filter_by(username=username).first()
+
+    # 檢查用戶是否存在，並驗證密碼
+    if user and bcrypt.check_password_hash(user.password, password):
+        return jsonify({'success': True, 'message': '登入成功！'}), 200
+    else:
+        return jsonify({'success': False, 'message': '用戶名或密碼錯誤！'}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)
