@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify  
+from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import  check_password_hash
 from flask_bcrypt import Bcrypt
@@ -98,9 +98,18 @@ def login():
 
     # 檢查用戶是否存在，並驗證密碼
     if user and bcrypt.check_password_hash(user.password, password):
+        session['user_id'] = user.id  # 儲存用戶ID
         return jsonify({'success': True, 'message': '登入成功！'}), 200
     else:
         return jsonify({'success': False, 'message': '用戶名或密碼錯誤！'}), 401
+
+def get_user_info():
+    user_id = session.get('user_id')
+    if user_id is None:
+        return jsonify({'error': '用戶未登入'}), 401
+
+    # 其他邏輯處理
+    return jsonify({'success': '用戶已登入'})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -3,7 +3,11 @@
     <div class="sidebar" :class="{ active: sidebarActive }">
       <div class="user-info">
         <div class="user-icon">👤</div>
-        <div class="username"><a href="#" @click="handleUsernameClick">使用者名稱</a></div>
+        <div class="username">
+          <!-- 只有在 user 存在時名稱 -->
+          <a href="#" v-if="user" @click="handleUsernameClick">{{ user.username }}</a>
+          <span v-else>訪客</span> 
+        </div>
       </div>
       <nav>
         <ul>
@@ -78,91 +82,106 @@
 </template>
 
 <script>
-  import { onMounted, ref } from "vue";
-  import axios from "axios";
-  
-  export default {
-    setup() {
-      const sidebarActive = ref(false);
-      const json_maincats = ref([]); 
-      const maincat_selected = ref(""); // 用於存儲選中的主類別
-      const offers = ref(""); 
-  
-      const toggleSidebar = () => {
-        sidebarActive.value = !sidebarActive.value;
-      };
+import { onMounted, ref } from "vue";
+import axios from "axios";
 
-      const handleProfileClick = () => {
-          alert('個人資料被點擊');
-      };
-  
-      const handleDietarySuggestionsClick = () => {
-        alert('個人飲食建議被點擊');
-      };
+export default {
+  setup() {
+    const user = ref(null); 
+    const sidebarActive = ref(false);
+    const json_maincats = ref([]); 
+    const maincat_selected = ref(""); // 用於存儲選中的主類別
+    const offers = ref(""); 
 
-      const handleNutritionQuery = () => {
-        alert('查詢按鈕被點擊');
-      };
+    const toggleSidebar = () => {
+      sidebarActive.value = !sidebarActive.value;
+    };
 
-      const handleLatestOffersClick = () => {
-         alert('最新優惠被點擊');
-      };
+    const handleProfileClick = () => {
+        alert('個人資料被點擊');
+    };
 
+    const handleDietarySuggestionsClick = () => {
+      alert('個人飲食建議被點擊');
+    };
 
+    const handleNutritionQuery = () => {
+      alert('查詢按鈕被點擊');
+    };
 
-      const handleSignOutClick = async () => {
-        if (confirm("確定要登出嗎？")) {
-          try {
-            await axios.post('/logout');
-            this.$router.push('/login');
-          } catch (error) {
-            console.error('登出失敗:', error);
-          }
+    const handleLatestOffersClick = () => {
+       alert('最新優惠被點擊');
+    };
+
+    const handleSignOutClick = async () => {
+      if (confirm("確定要登出嗎？")) {
+        try {
+          await axios.post('/logout');
+          user.value = null; // 清空用戶信息
+          this.$router.push('/login'); // 導向登入頁面
+        } catch (error) {
+          console.error('登出失敗:', error);
         }
-      };
-  
-      const get_all_maincat = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:5000/maincat");
-        json_maincats.value = response.data; // 設定主類別資料
-        if (json_maincats.value.length > 0) {
-          maincat_selected.value = json_maincats.value[0].id; // 預設選擇第一個類別
-        }
-      } catch (error) {
-        console.error("獲取主類別失敗:", error);
       }
     };
 
-    //獲取優惠資料
-    const get_all_offers = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:5000/offers"); // 獲取優惠資料
-        offers.value = response.data; // 設定優惠資料
-      } catch (error) {
-        console.error("獲取優惠資料失敗:", error);
+    const get_all_maincat = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:5000/maincat");
+      json_maincats.value = response.data; // 設定主類別資料
+      if (json_maincats.value.length > 0) {
+        maincat_selected.value = json_maincats.value[0].id; // 預設選擇第一個類別
       }
-    };
-    
-      onMounted(() => {
-        get_all_maincat(); //主類別
-        get_all_offers();// 獲取優惠資料
-      });
-  
-      return {
-        sidebarActive,
-        json_maincats,
-        maincat_selected,
-        offers, 
-        toggleSidebar,
-        handleProfileClick,
-        handleLatestOffersClick,
-        handleDietarySuggestionsClick,
-        handleNutritionQuery,
-        handleSignOutClick,
-      };
-    },
+    } catch (error) {
+      console.error("獲取主類別失敗:", error);
+    }
   };
+
+  //獲取優惠資料
+  const get_all_offers = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:5000/offers"); // 獲取優惠資料
+      offers.value = response.data; // 設定優惠資料
+    } catch (error) {
+      console.error("獲取優惠資料失敗:", error);
+    }
+  };
+  const getUserInfo = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:5000/api/userinfo');
+      console.log("用戶資料：", response.data); // 確認用戶資料
+      user.value = response.data; // 更新用戶資料
+    } catch (error) {
+      console.error("獲取用戶資料失敗:", error);
+    }
+  };
+
+  
+
+    onMounted(() => {
+      get_all_maincat(); //主類別
+      get_all_offers();// 獲取優惠資料
+      getUserInfo(); 
+    });
+
+    return {
+      user, 
+      sidebarActive,
+      json_maincats,
+      maincat_selected,
+      offers, 
+      toggleSidebar,
+      handleProfileClick,
+      handleLatestOffersClick,
+      handleDietarySuggestionsClick,
+      handleNutritionQuery,
+      handleSignOutClick,
+    };
+  },
+};
 </script>
+
+
   
 <style scoped>
 .root {
