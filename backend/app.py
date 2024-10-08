@@ -7,11 +7,11 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
 
-bcrypt = Bcrypt(app)
 # 資料庫設置
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫 URI
 app.config['SECRET_KEY'] = '51718'
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 # 定義資料表
 class MainCategory(db.Model):
@@ -59,10 +59,6 @@ def get_offers():
     return jsonify(offer_list)
 
 #註冊
-from flask_bcrypt import Bcrypt
-
-bcrypt = Bcrypt()
-
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -102,14 +98,7 @@ def login():
         return jsonify({'success': True, 'message': '登入成功！'}), 200
     else:
         return jsonify({'success': False, 'message': '用戶名或密碼錯誤！'}), 401
-
-def get_user_info():
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': '用戶未登入'}), 401
-
-    # 其他邏輯處理
-    return jsonify({'success': '用戶已登入'})
+    
 
 if __name__ == '__main__':
     app.run(debug=True)

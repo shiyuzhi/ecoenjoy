@@ -146,22 +146,10 @@ export default {
       console.error("獲取優惠資料失敗:", error);
     }
   };
-  const getUserInfo = async () => {
-    try {
-      const response = await axios.get('http://127.0.0.1:5000/api/userinfo');
-      console.log("用戶資料：", response.data); // 確認用戶資料
-      user.value = response.data; // 更新用戶資料
-    } catch (error) {
-      console.error("獲取用戶資料失敗:", error);
-    }
-  };
-
   
-
     onMounted(() => {
       get_all_maincat(); //主類別
       get_all_offers();// 獲取優惠資料
-      getUserInfo(); 
     });
 
     return {
