@@ -1,9 +1,12 @@
-POST http://localhost:5000/register
+### 登錄請求
+POST http://127.0.0.1:5000/login
 Content-Type: application/json
 
 {
-  "username": "testuser",
-  "email": "testuser@example.com",
-  "password": "your_password",
-  "confirmPassword": "your_password"
+  "username": "11",
+  "password": "11"
 }
+
+### 受保護的數據請求
+GET http://127.0.0.1:5000/api/protected
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODQ2NzY5NiwianRpIjoiMDNkNGEyOTEtMTQ0ZS00MDE3LTk0MDQtZjU0ZGFhZGFmZGNjIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VybmFtZSI6IjExIn0sIm5iZiI6MTcyODQ2NzY5NiwiY3NyZiI6IjEyMzZjZmI1LTJkOWItNDNjYS1hNmNlLTg3NzhhNzFmNWUwMiIsImV4cCI6MTcyODQ2ODU5Nn0.tJheKZTSAuh8_tb1kQ0xhgd7oyhb3LYZx0xwxfy-1HE

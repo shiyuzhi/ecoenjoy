@@ -58,7 +58,7 @@
           <div class="restaurant-item">餐廳 4</div>
           <div class="restaurant-item">餐廳 5</div>
         </div>
-
+        
         <div class="nutrition-query">
           <h3>營養價值查詢</h3>
           <input type="text" placeholder="微米化合物">
@@ -285,17 +285,35 @@ header {
 }
 
 .restaurant-slider {
-  display: flex;
-  overflow-x: auto;
-  padding: 30px 0;
+    display: flex;
+    overflow-x: auto;
+    padding: 30px 0;
+    scroll-behavior: smooth;
 }
 
 .restaurant-item {
-  min-width: 250px; 
-  height: 200px; 
-  background-color: #e0e0e0;
-  margin-right: 20px; 
-  border-radius: 8px; 
+  min-width: 250px;
+    height: 200px;
+    background: linear-gradient(135deg, #f1efef, #a3d77c);
+    margin-right: 20px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(211, 0, 0, 0.2);
+    transition: transform 0.3s, box-shadow 0.6s;
+}
+
+.restaurant-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 6px 15px rgba(226, 195, 195, 0.3);
+}
+
+.restaurant-item h4 {
+    font-family: 'Arial', sans-serif;
+    font-size: 18px;
+    color: #e1dedeee;
+    text-align: center;
 }
 
 /* 營養查詢 */
