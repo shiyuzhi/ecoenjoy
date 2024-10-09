@@ -1,15 +1,21 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import  check_password_hash
+from werkzeug.security import  generate_password_hash, check_password_hash
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
 
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
+# 配置 CORS，允許來自前端的跨域請求並支持攜帶憑證（如 cookies）
+CORS(app, supports_credentials=True, origins=[" http://localhost:5173/"])
+app.config['JWT_SECRET_KEY'] = 'cewodemjoifjivonfiovorirovijifvdsnvnssss'  # 替換為你的密鑰
+jwt = JWTManager(app)  # 初始化 JWTManager
 
 # 資料庫設置
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫 URI
-app.config['SECRET_KEY'] = '51718'
+app.config['SECRET_KEY'] = '548755585214562255632556999369954556'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
@@ -85,21 +91,25 @@ def register():
 #登入
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    
-    username = data.get('username').strip()
-    password = data.get('password').strip()
+    username = request.json.get('username')
+    password = request.json.get('password')
 
     user = User.query.filter_by(username=username).first()
 
-    # 檢查用戶是否存在，並驗證密碼
     if user and bcrypt.check_password_hash(user.password, password):
-        session['user_id'] = user.id  # 儲存用戶ID
-        return jsonify({'success': True, 'message': '登入成功！'}), 200
+        # 生成 JWT Token
+        access_token = create_access_token(identity={'username': username})
+        return jsonify({'success': True, 'access_token': access_token}), 200
     else:
         return jsonify({'success': False, 'message': '用戶名或密碼錯誤！'}), 401
-    
+
+@app.route('/api/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    # 獲取 Token 中的用戶身份
+    current_user = get_jwt_identity()
+    return jsonify({'message': f'This is protected data for {current_user["username"]}.'}), 200
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
- 
+    app.run(debug=True)  # 確保這行存在
