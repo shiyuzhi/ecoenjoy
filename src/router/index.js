@@ -7,7 +7,7 @@ import CustomMenu from '../views/CustomMenu.vue';
 import Profile from '../views/Profile.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
-
+import DietarySuggestions from '../views/DietarySuggestions.vue'; 
 
 
 const routes = [
@@ -19,7 +19,7 @@ const routes = [
   { path: '/profile', name: 'Profile', component: Profile },
   { path: '/Login', component: Login},
   { path: '/Register', component: Register},
-  
+  { path: '/dietary-suggestions', component: DietarySuggestions },
 ];
 
 const router = createRouter({

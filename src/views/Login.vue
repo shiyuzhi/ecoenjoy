@@ -4,11 +4,11 @@
     <form @submit.prevent="handleLogin" class="login-form">
       <div class="form-group">
         <label for="username">使用者名稱</label>
-        <input type="text" v-model="username" id="username" required />
+        <input type="text" v-model="username" id="username" required autocomplete="username" />
       </div>
       <div class="form-group">
         <label for="password">密碼</label>
-        <input type="password" v-model="password" id="password" required />
+        <input type="password" v-model="password" id="password" required autocomplete="current-password" />
       </div>
       <div class="form-footer">
         <div class="remember-me">
@@ -21,13 +21,13 @@
       <div class="social-login">
         <p>使用社交媒體登入</p>
         <div class="social-buttons">
-          <button @click="handleGoogleLogin" class="social-button google-button">
+          <button type="button" @click="handleGoogleLogin" class="social-button google-button">
             <i class="fab fa-google social-icon"></i> Google
           </button>
-          <button @click="handleFbLogin" class="social-button fb-button">
+          <button type="button" @click="handleFbLogin" class="social-button fb-button">
             <i class="fab fa-facebook social-icon"></i> Facebook
           </button>
-          <button @click="handleLineLogin" class="social-button line-button">
+          <button type="button" @click="handleLineLogin" class="social-button line-button">
             <i class="fab fa-line social-icon"></i> Line
           </button>
         </div>
@@ -35,54 +35,81 @@
     </form>
   </div>
 </template>
-
 <script>
-import axios from 'axios';
-
-export default {
-  data() {
-    return {
-      username: '',
-      password: '',
-      rememberMe: false,
-    };
-  },
-  methods: {
-    async handleLogin() {
-      try {
-        const response = await axios.post('http://localhost:5000/login', {
-          username: this.username,
-          password: this.password,
-        });
-
-        if (response.data.success) {
-          alert(`登入成功！用戶名: ${this.username}`);
-          // 儲存 token 或用戶資料以便後續使用
-          // 例如: localStorage.setItem('token', response.data.token);
-        } else {
-          alert('登入失敗！請檢查您的使用者名稱和密碼。');
+  import axios from 'axios';
+  
+  export default {
+    data() {
+      return {
+        username: '',
+        password: '',
+        rememberMe: false, // 記住我選項
+        user: null, // 用戶資料
+      };
+    },
+    methods: {
+      async handleLogin() {
+        try {
+          const response = await axios.post('http://localhost:5000/login', {
+            username: this.username,
+            password: this.password,
+          });
+  
+          console.log('Login response:', response.data); // 確認登入回應
+  
+          if (response.data.success) {
+            const accessToken = response.data.access_token;
+  
+            // 儲存 token 和用戶名
+            if (this.rememberMe) {
+              localStorage.setItem('token', accessToken);
+              localStorage.setItem('username', this.username);
+            } else {
+              sessionStorage.setItem('token', accessToken);
+              sessionStorage.setItem('username', this.username);
+            }
+    
+    
+            // 
+            await this.getUserData(accessToken);  // 使用 Token 獲取用戶資料
+            // 登入成功提示
+            alert(`登入成功！歡迎來到ecoenjoy，${this.username}`);// 或者使用其他的提示方式
+          } else {
+            alert('登入失敗！請檢查您的使用者名稱和密碼。');
+          }
+        } catch (error) {
+          console.error('登入發生錯誤:', error.response ? error.response.data : error.message);
+          alert('發生錯誤，請稍後再試。');
         }
+      },
+      async getUserData(token) {
+      try {
+        const response = await axios.get('http://localhost:5000/user', {
+          headers: {
+            Authorization: `Bearer ${token}`  // 確保這裡的 token 正確
+          }
+        });
+        console.log('用戶資料:', response.data); // 確認用戶資料回應
+        this.user = response.data.user; // 儲存用戶資料
       } catch (error) {
-        console.error(error);
-        alert('發生錯誤，請稍後再試。');
+        console.error('獲取用戶資料失敗:', error.response ? error.response.data : error.message);
+        alert('獲取用戶資料失敗，請稍後再試。');
       }
     },
-    handleGoogleLogin() {
-      alert('使用 Google 登入');
-      // 在這裡添加 Google 登入邏輯
-    },
-    handleFbLogin() {
-      alert('使用 Facebook 登入');
-      // 在這裡添加 Facebook 登入邏輯
-    },
-    handleLineLogin() {
-      alert('使用 Line 登入');
-      // 在這裡添加 Line 登入邏輯
-    },
-  },
-};
-</script>
 
+      handleGoogleLogin() {
+        alert('使用 Google 登入');
+      },
+      handleFbLogin() {
+        alert('使用 Facebook 登入');
+      },
+      handleLineLogin() {
+        alert('使用 Line 登入');
+      },
+    },
+  };
+</script>
+  
 <style scoped>
   .login-container {
     width: 350px;
