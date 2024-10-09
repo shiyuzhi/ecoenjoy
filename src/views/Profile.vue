@@ -26,7 +26,6 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
 
 export default {
   setup() {
@@ -37,22 +36,16 @@ export default {
       phone: ''
     });
 
-    const getUserData = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:5000/user'); // 獲取會員資料的API
-        user.value = response.data;
-      } catch (error) {
-        console.error('獲取會員資料失敗:', error);
-      }
+    const getUserData = () => {
+      // 從 localStorage 獲取用戶資料
+      const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+      user.value = { ...user.value, ...storedUser }; // 將存儲的資料合併到 user 物件
     };
 
-    const handleSave = async () => {
-      try {
-        await axios.put('http://127.0.0.1:5000/user', user.value); // 修改會員資料的API
-        alert('資料已保存！');
-      } catch (error) {
-        console.error('保存失敗:', error);
-      }
+    const handleSave = () => {
+      // 保存用戶資料到 localStorage
+      localStorage.setItem('user', JSON.stringify(user.value));
+      alert('資料已保存！');
     };
 
     onMounted(() => {
@@ -72,14 +65,14 @@ export default {
   max-width: 500px; 
   margin: 0 auto; 
   padding: 20px; 
-  background-color: #000000fd; 
+  background-color: #4b2d2dfd; 
   border-radius: 20px; /* 邊框圓角 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
   text-align: center; /* 標題置中 */
-  color: #ded2c4; /* 標題顏色 */
+  color: #fff9f2; /* 標題顏色 */
 }
 
 .profile-form {
