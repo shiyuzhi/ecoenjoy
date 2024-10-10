@@ -129,13 +129,13 @@ def get_user():
         return jsonify({"user": user_data}), 200
     return jsonify({"error": "用戶不存在"}), 404
 
+
 @app.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     jti = get_jwt()['jti']  # 獲取 token 的唯一標識
     token_blacklist.add(jti)  # 將 token 加入黑名單
     return jsonify({"msg": "登出成功！"}), 200
-
 
 if __name__ == '__main__':
     app.run(debug=True)  # 確保這行存在

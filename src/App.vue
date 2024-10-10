@@ -39,7 +39,7 @@
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
-        <div class="cart-icon" @click="toggleCart">🛒</div> <!-- 點擊購物車圖案顯示清單 -->
+        <div class="cart-icon" @click="toggleCart">🛒</div> <!-- 購物車清單 -->
       </header>
       <div v-if="isCartVisible" class="cart">
         <h1>購物車清單</h1>
@@ -108,7 +108,7 @@ export default {
     const maincat_selected = ref(""); // 用於存儲選中的主類別
     const offers = ref(""); 
     const searchQuery = ref('');
-    const isCartVisible = ref(false); // 控制購物車顯示
+    const isCartVisible = ref(false); // 購物車顯示
     
     const toggleCart = () => {
         isCartVisible.value = !isCartVisible.value;
@@ -198,7 +198,6 @@ export default {
         }
       }
     };
-
 
     const get_all_maincat = async () => {
       try {
