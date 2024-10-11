@@ -1,18 +1,22 @@
 ### 登錄請求
+
 POST http://127.0.0.1:5000/login
 Content-Type: application/json
+
 {
   "username": "22",
   "password": "11"
 }
 
 
-#測試獲取token
 
+#測試獲取token
 ### 受保護的數據請求
+
 GET http://127.0.0.1:5000/api/protected
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6Z…A4NH0.p3VH5JucyQUUBy3BrO7UrIl_52bcEr2vYg5omAmP-ZQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODYyNDQwNCwianRpIjoiYmIzNTVhYTMtZGYxYy00ZDRmLTg4N2YtMjJhZTdiYzVmNDEyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VybmFtZSI6IjExIn0sIm5iZiI6MTcyODYyNDQwNCwiY3NyZiI6IjEwNzEwOTQ1LWYzYjUtNDg2Ny05YjQzLWZmZjE3NGFkNTg1MyIsImV4cCI6MTczMTIxNjQwNH0.XBiaTTBgE1AD2O4N2T5O9pTQ3loqLV802mYoq_l35zo
+
 
 ### 獲取用戶資料
 GET http://localhost:5000/user
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6Z…A4NH0.p3VH5JucyQUUBy3BrO7UrIl_52bcEr2vYg5omAmP-ZQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODYyNDQwNCwianRpIjoiYmIzNTVhYTMtZGYxYy00ZDRmLTg4N2YtMjJhZTdiYzVmNDEyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VybmFtZSI6IjExIn0sIm5iZiI6MTcyODYyNDQwNCwiY3NyZiI6IjEwNzEwOTQ1LWYzYjUtNDg2Ny05YjQzLWZmZjE3NGFkNTg1MyIsImV4cCI6MTczMTIxNjQwNH0.XBiaTTBgE1AD2O4N2T5O9pTQ3loqLV802mYoq_l35zo

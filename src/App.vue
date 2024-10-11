@@ -180,7 +180,7 @@ export default {
             }
           });
 
-          if (response.data.success) {
+          if (response.status === 200) {
             // 清空用戶信息
             user.value = null; // 清空用戶資料
             sessionStorage.removeItem('token'); // 清除 token

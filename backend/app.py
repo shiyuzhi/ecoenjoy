@@ -6,8 +6,8 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import timedelta  #有關token
 import os
-from config import Config  # 引入配置
 from flask_jwt_extended import get_jwt
+import logging
 
 
 
@@ -17,10 +17,14 @@ CORS(app)  # 允許所有來源的請求
 CORS(app, supports_credentials=True, origins=[" http://localhost:5173/"])
 app.config['JWT_SECRET_KEY'] = "ckdsojcaojcosajcicdsji" 
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)  # 設定 Token 過期時間為 30 天
+app.config['JWT_BLACKLIST_ENABLED'] = True
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blacklist.db'
 jwt = JWTManager(app)  # 初始化 JWTManager
 
 # 資料庫設置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫 URI
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:ecoenjoy2024@localhost:3306/ecoenjoydata'  # 替換為正確的資料庫 URI
 app.config['SECRET_KEY'] = '548755585214562255632556999369954556'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -51,6 +55,25 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
+# 設置日誌
+logging.basicConfig(level=logging.DEBUG)
+
+#黑名單   
+class TokenBlacklist(db.Model):
+    __tablename__ = 'token_blacklist'  # 明確指定表名
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, unique=True)
+
+    def __init__(self, jti):
+        self.jti = jti
+
+# 檢查 token 是否在黑名單中
+@jwt.token_in_blocklist_loader
+def check_if_token_in_blacklist(jwt_header, jwt_payload):
+    jti = jwt_payload['jti']
+    token = TokenBlacklist.query.filter_by(jti=jti).first()
+    return token is not None
+
 
 # 創建資料表
 with app.app_context():
@@ -133,9 +156,23 @@ def get_user():
 @app.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
-    jti = get_jwt()['jti']  # 獲取 token 的唯一標識
-    token_blacklist.add(jti)  # 將 token 加入黑名單
+    jti = get_jwt()['jti']
+    blacklisted_token = TokenBlacklist(jti=jti)
+    db.session.add(blacklisted_token)
+    db.session.commit()
     return jsonify({"msg": "登出成功！"}), 200
+
+@jwt.revoked_token_loader
+def revoked_token_callback(jwt_header, jwt_payload):
+    return jsonify({"msg": "這個 token 已被撤銷"}), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({"msg": "無效的 token"}), 422
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return jsonify({"msg": "請提供有效的 token"}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)  # 確保這行存在
