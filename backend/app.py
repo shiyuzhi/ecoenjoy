@@ -8,13 +8,15 @@ from datetime import timedelta  #有關token
 import os
 from flask_jwt_extended import get_jwt
 import logging
+from sqlalchemy import and_
+
 
 
 
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
 # 配置 CORS，允許來自前端的跨域請求並支持攜帶憑證（如 cookies）
-CORS(app, supports_credentials=True, origins=[" http://localhost:5173/"])
+CORS(app, supports_credentials=True, origins=["http://localhost:5173/"])
 app.config['JWT_SECRET_KEY'] = "ckdsojcaojcosajcicdsji" 
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)  # 設定 Token 過期時間為 30 天
 app.config['JWT_BLACKLIST_ENABLED'] = True
@@ -24,7 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blacklist.db'
 jwt = JWTManager(app)  # 初始化 JWTManager
 
 # 資料庫設置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:ecoenjoy2024@localhost:3306/ecoenjoydata'  # 替換為正確的資料庫 URI
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
 app.config['SECRET_KEY'] = '548755585214562255632556999369954556'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -66,6 +68,16 @@ class TokenBlacklist(db.Model):
 
     def __init__(self, jti):
         self.jti = jti
+# 定義食物的資料庫模型
+class Food(db.Model):
+    __tablename__ = 'foods' 
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    protein = db.Column(db.Float, nullable=False)
+    calories = db.Column(db.Float, nullable=False)
+    fat = db.Column(db.Float, nullable=False)
+    sugar = db.Column(db.Float, nullable=False)
+
 
 # 檢查 token 是否在黑名單中
 @jwt.token_in_blocklist_loader
@@ -152,7 +164,7 @@ def get_user():
         return jsonify({"user": user_data}), 200
     return jsonify({"error": "用戶不存在"}), 404
 
-
+#登出
 @app.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
@@ -173,6 +185,79 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     return jsonify({"msg": "請提供有效的 token"}), 401
+
+#食物分類
+@app.route('/foods', methods=['GET'])
+def get_foods():
+    try:
+        # 獲取多個 nutrient 和 level 參數
+        nutrients = request.args.getlist('nutrient')
+        levels = request.args.getlist('level')
+
+        app.logger.debug(f'Nutrients: {nutrients}, Levels: {levels}')  # 日誌輸出
+
+        # 檢查參數數量是否匹配
+        if len(nutrients) != len(levels):
+            return jsonify({"error": "營養素和等級參數數量不匹配"}), 400
+
+        # 檢查 nutrient 和 level 是否為有效值
+        valid_nutrients = ['protein', 'calories', 'fat', 'sugar']
+        valid_levels = ['high', 'low']
+
+        filters = []
+        for nutrient, level in zip(nutrients, levels):
+            app.logger.debug(f'Nutrient: {nutrient}, Level: {level}')  # 日誌輸出
+
+            if nutrient not in valid_nutrients or level not in valid_levels:
+                return jsonify({"error": f"無效的參數: {nutrient}, {level}"}), 400
+
+            if level == 'high':
+                if nutrient == 'protein':
+                    filters.append(Food.protein > 20)  # 高蛋白質
+                elif nutrient == 'calories':
+                    filters.append(Food.calories > 200)  # 高熱量
+                elif nutrient == 'fat':
+                    filters.append(Food.fat > 10)  # 高脂肪
+                elif nutrient == 'sugar':
+                    filters.append(Food.sugar > 5)  # 高糖
+            elif level == 'low':
+                if nutrient == 'protein':
+                    filters.append(Food.protein <= 20)  # 低蛋白質
+                elif nutrient == 'calories':
+                    filters.append(Food.calories <= 200)  # 低熱量
+                elif nutrient == 'fat':
+                    filters.append(Food.fat <= 10)  # 低脂肪
+                elif nutrient == 'sugar':
+                    filters.append(Food.sugar <= 5)  # 低糖
+
+        # 將所有條件結合起來
+        if filters:
+            query = Food.query.filter(and_(*filters))
+        else:
+            query = Food.query
+
+        # 執行查詢
+        results = query.all()
+
+        # 檢查結果是否為空
+        if not results:
+            return jsonify({"message": "沒有符合條件的食物"}), 200
+
+        # 構建返回的結果列表
+        food_list = [{
+            'id': food.id,
+            'name': food.name,
+            'protein': food.protein,
+            'calories': food.calories,
+            'fat': food.fat,
+            'sugar': food.sugar
+        } for food in results]
+
+        return jsonify(food_list), 200
+
+    except Exception as e:
+        app.logger.error(f'Error in get_foods: {str(e)}')
+        return jsonify({"error": "內部伺服器錯誤"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)  # 確保這行存在

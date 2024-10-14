@@ -4,12 +4,11 @@
       <div class="user-info">
         <div class="user-icon">⛄</div>
         <div class="username">
-          <!-- 只有在 user 存在時名稱 -->
           <a href="#" v-if="user" @click="handleUsernameClick">{{ user.username }}</a>
           <span v-else>訪客</span> 
         </div>
       </div>
-      <nav>
+      <nav aria-label="主要導航">
         <ul>
           <li><router-link to="/profile">會員資料</router-link></li>
           <li><router-link to="/dietary-suggestions">個人飲食建議</router-link></li>
@@ -39,8 +38,9 @@
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
-        <div class="cart-icon" @click="toggleCart">🛒</div> <!-- 購物車清單 -->
+        <div class="cart-icon" @click="toggleCart">🛒</div>
       </header>
+
       <div v-if="isCartVisible" class="cart">
         <h1>購物車清單</h1>
         <div class="search-bar">
@@ -54,7 +54,7 @@
         </ul>
         <p v-if="filteredCartItems.length === 0">購物車是空的</p>
       </div>
-  
+
       <div class="content">
         <div class="tabs">
           <router-link to="/delivery"><button>外送</button></router-link>
@@ -62,7 +62,8 @@
           <router-link to="/community"><button>社群</button></router-link>
           <router-link to="/custom-menu"><button>自定義菜單</button></router-link>
         </div>
-        <router-view></router-view> <!-- 用於顯示路由內容 -->
+        <router-view></router-view>
+
         <h3>餐廳推薦</h3>
         <div class="restaurant-slider">
           <div class="restaurant-item">餐廳 1</div>
@@ -71,15 +72,41 @@
           <div class="restaurant-item">餐廳 4</div>
           <div class="restaurant-item">餐廳 5</div>
         </div>
-        
-        <div class="nutrition-query">
-          <h3>營養價值查詢</h3>
-          <input type="text" placeholder="微米化合物">
-          <input type="text" placeholder="蛋白質">
-          <input type="text" placeholder="膳食纖維">
-          <button @click="handleNutritionQuery">查詢</button>
-        </div>
 
+        <!-- 營養查詢區域 -->
+        <div class="nutrition-query-container">
+          <h1 class="nutrition-title">營養價值查詢</h1>
+      
+          <!-- 營養素選擇區域 -->
+          <div>
+            <div class="nutrition-field" v-for="nutrient in nutrients" :key="nutrient.key">
+              <label>{{ nutrient.label }}:</label>
+              <button 
+                @click="selectNutrient(nutrient.key, 'high')" 
+                :class="{'selected': selectedNutrients[nutrient.key] === 'high'}">高</button>
+              <button 
+                @click="selectNutrient(nutrient.key, 'low')" 
+                :class="{'selected': selectedNutrients[nutrient.key] === 'low'}">低</button>
+            </div>
+      
+            <!-- 查詢按鈕 -->
+            <button @click="fetchFoods" class="query-button">查詢</button>
+            <!-- 重置按鈕 -->
+            <button @click="resetSelections" class="reset-button">重置</button>
+          </div>
+      
+          <!-- 查詢結果區域 -->
+          <div class="query-results" v-if="queryResults.length > 0">
+            <h4>查詢結果:</h4>
+            <ul>
+              <li v-for="item in queryResults" :key="item.id">
+                {{ item.name }} - 蛋白質: {{ item.protein }}g, 熱量: {{ item.calories }}kcal, 脂質: {{ item.fat }}g, 糖份: {{ item.sugar }}g
+              </li>
+            </ul>
+          </div>
+          <p v-else-if="queried" class="no-results">沒有符合條件的食物</p>
+      </div>  
+        
         <!-- 最新優惠區域 -->
         <div class="latest-offers">
           <h2>最新優惠</h2>
@@ -95,164 +122,189 @@
 </template>
 
 <script>
-import { onMounted, ref, computed } from "vue"; // 整合 ref 和 computed
-import { useRouter } from "vue-router"; 
-import axios from "axios";
-
-export default {
-  setup() {
-    const router = useRouter(); // 獲取 router 實例
-    const user = ref(null); 
-    const sidebarActive = ref(false);
-    const json_maincats = ref([]); 
-    const maincat_selected = ref(""); // 用於存儲選中的主類別
-    const offers = ref(""); 
-    const searchQuery = ref('');
-    const isCartVisible = ref(false); // 購物車顯示
-    
-    const toggleCart = () => {
-        isCartVisible.value = !isCartVisible.value;
-    };
-
-    const cartItems = ref([
-      { id: 1, name: '商品 A', quantity: 2 },
-      { id: 2, name: '商品 B', quantity: 1 },
-      { id: 3, name: '商品 C', quantity: 3 },
-      // 可以根據需要添加更多商品
-    ]);
-    
-    const filteredCartItems = computed(() => {
-      if (!searchQuery.value) {
-        return cartItems.value;
-      }
-      return cartItems.value.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-      );
-    });
-
-    const removeItem = (id) => {
-      cartItems.value = cartItems.value.filter(item => item.id !== id);
-    };
-
-    const toggleSidebar = () => {
-      sidebarActive.value = !sidebarActive.value;
-    };
-
-    const handleProfileClick = () => {
-        alert('個人資料被點擊');
-    };
-
-    const handleDietarySuggestionsClick = () => {
-      alert('個人飲食建議');
-    };
-
-    const handleNutritionQuery = () => {
-      alert('查詢結果');
-    };
-
-    const handleLatestOffersClick = () => {
-       alert('最新優惠');
-    };
-    
-    const getUserData = () => {
-      const storedUsername = sessionStorage.getItem('username');
-      if (storedUsername) {
-        user.value = { username: storedUsername }; // 使用 sessionStorage 中的用戶資料
-      } else {
-        user.value = null; // 如果沒有用戶資料，設置為 null
-        console.log('未找到用戶，顯示訪客');
-      }
-    };
-
-    const handleSignOutClick = async () => {
-      if (confirm("確定要登出嗎？")) {
-        try {
-          const token = sessionStorage.getItem('token');
-          if (!token) {
-            alert('未找到有效的 Token');
-            return;
-          }
-
-          // 發送登出請求
-          const response = await axios.post('http://localhost:5000/logout', {}, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-
-          if (response.status === 200) {
-            // 清空用戶信息
-            user.value = null; // 清空用戶資料
-            sessionStorage.removeItem('token'); // 清除 token
-            sessionStorage.removeItem('username'); // 清除用戶名
-            
-            // 更新用戶狀態
-            getUserData(); // 更新用戶狀態為「訪客」
-
-            // 導向登入頁面
-            router.push('/login');
-          }
-        } catch (error) {
-          console.error('登出失敗:', error.response ? error.response.data : error.message);
-          alert('登出失敗，請稍後再試。');
-        }
-      }
-    };
-
-    const get_all_maincat = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:5000/maincat");
-        json_maincats.value = response.data; // 設定主類別資料
-          if (json_maincats.value.length > 0) {
-            maincat_selected.value = json_maincats.value[0].id; // 預設選擇第一個類別
-          }
-        } catch (error) {
-        console.error("獲取主類別失敗:", error);
-      }
-    };
-
-  //獲取優惠資料
-  const get_all_offers = async () => {
-    try {
-      const response = await axios.get("http://127.0.0.1:5000/offers"); // 獲取優惠資料
-      offers.value = response.data; // 設定優惠資料
-    } catch (error) {
-      console.error("獲取優惠資料失敗:", error);
-    }
-  };
+  import { ref, computed, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import axios from 'axios';
   
-    onMounted(() => {
-      get_all_maincat(); //主類別
-      get_all_offers();// 獲取優惠資料
-      getUserData();
-    });
-       
+  export default {
+    setup() {
+      const router = useRouter();
+      const user = ref(null);
+      const sidebarActive = ref(false);
+      const json_maincats = ref([]); 
+      const maincat_selected = ref(""); 
+      const offers = ref([]); 
+      const searchQuery = ref('');
+      const isCartVisible = ref(false); 
+  
+      const toggleCart = () => {
+        isCartVisible.value = !isCartVisible.value;
+      };
+  
+      const queryResults = ref([]);
+      const queried = ref(false);
+      const selectedNutrients = ref({ protein: null, calories: null, fat: null, sugar: null });
+  
+      const nutrients = [
+        { key: 'protein', label: '蛋白質' },
+        { key: 'calories', label: '熱量' },
+        { key: 'fat', label: '脂質' },
+        { key: 'sugar', label: '糖份' }
+      ];
+  
+      const cartItems = ref([
+        { id: 1, name: '商品 A', quantity: 2 },
+        { id: 2, name: '商品 B', quantity: 1 },
+        { id: 3, name: '商品 C', quantity: 3 },
+      ]);
+      
+      const filteredCartItems = computed(() => {
+        if (!searchQuery.value) {
+          return cartItems.value;
+        }
+        return cartItems.value.filter(item =>
+          item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+        );
+      });
+  
+      const removeItem = (itemId) => {
+        cartItems.value = cartItems.value.filter(item => item.id !== itemId);
+      };
+  
+      const toggleSidebar = () => {
+        sidebarActive.value = !sidebarActive.value;
+      };
+  
+      const getUserData = () => {
+        const storedUsername = sessionStorage.getItem('username');
+        user.value = storedUsername ? { username: storedUsername } : null;
+      };
+  
+      const handleSignOutClick = async () => {
+        if (confirm("確定要登出嗎？")) {
+          try {
+            const token = sessionStorage.getItem('token');
+            if (!token) {
+              alert('未找到有效的 Token');
+              return;
+            }
+  
+            const response = await axios.post('http://localhost:5000/logout', {}, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+  
+            if (response.status === 200) {
+              user.value = null; 
+              sessionStorage.removeItem('token');
+              sessionStorage.removeItem('username');
+              getUserData();
+              router.push('/login');
+            }
+          } catch (error) {
+            console.error('登出失敗:', error.response ? error.response.data : error.message);
+            alert('登出失敗，請稍後再試。');
+          }
+        }
+      };
+  
+      const get_all_maincat = async () => {
+        try {
+          const response = await axios.get("http://127.0.0.1:5000/maincat");
+          json_maincats.value = response.data; 
+          if (json_maincats.value.length > 0) {
+            maincat_selected.value = json_maincats.value[0].id; 
+          }
+        } catch (error) {
+          console.error("獲取主類別失敗:", error);
+        }
+      };
+  
+      const get_all_offers = async () => {
+            try {
+              const response = await axios.get("http://127.0.0.1:5000/offers");
+              offers.value = response.data;
+            } catch (error) {
+              console.error("獲取優惠資料失敗:", error);
+            }
+          };
+      
+       // 營養素的高低分類
+      const selectNutrient = (nutrient, level) => {
+        if (selectedNutrients.value[nutrient] === level) {
+          selectedNutrients.value[nutrient] = null; // 取消選擇
+        } else {
+          selectedNutrients.value[nutrient] = level;
+        }
+      };
 
-
-    return {
-      user, 
-      sidebarActive,
-      json_maincats,
-      maincat_selected,
-      offers, 
-      toggleSidebar,
-      handleProfileClick,
-      handleLatestOffersClick,
-      handleDietarySuggestionsClick,
-      handleNutritionQuery,
-      handleSignOutClick,
-      cartItems,
-      searchQuery,
-      isCartVisible,
-      toggleCart,
-      filteredCartItems,
-      removeItem,
-    };
-  },
-};
+      // 重置所有選擇
+      const resetSelections = () => {
+        selectedNutrients.value = { protein: null, calories: null, fat: null, sugar: null };
+        queryResults.value = [];
+        queried.value = false;
+      };
+      
+      const fetchFoods = async () => {
+        queried.value = true;
+        const hasSelectedNutrients = Object.values(selectedNutrients.value).some(level => level !== null);
+        if (!hasSelectedNutrients) {
+            alert("請選擇至少一個營養素");
+            return;
+        }
+        try {
+            const params = new URLSearchParams();
+            for (const [nutrient, level] of Object.entries(selectedNutrients.value)) {
+                if (level) {  
+                    params.append('nutrient', nutrient);
+                    params.append('level', level);
+                }
+            }
+            const response = await axios.get(`http://localhost:5000/foods?${params.toString()}`);
+            if (response.data.message) {
+                alert(response.data.message);
+                queryResults.value = [];
+            } else {
+                queryResults.value = response.data;
+            }
+        } catch (error) {
+            console.error("查詢失敗:", error);
+            alert('查詢失敗，請稍後再試。');
+            queryResults.value = [];
+        }
+      };
+  
+      onMounted(() => {
+        get_all_maincat();
+        get_all_offers();
+        getUserData();
+      });
+    
+      return {
+        user, 
+        sidebarActive,
+        json_maincats,
+        maincat_selected,
+        offers, 
+        toggleSidebar,
+        handleSignOutClick,
+        cartItems,
+        searchQuery,
+        isCartVisible,
+        toggleCart,
+        filteredCartItems,
+        removeItem,
+        queryResults,
+        queried,
+        selectedNutrients,
+        selectNutrient,
+        fetchFoods,
+        nutrients,
+        resetSelections,
+      };
+    },
+  };
 </script>
-
-
+  
   
 <style scoped>
 .root {
@@ -370,7 +422,18 @@ header {
 }
 
 .cart li {
-  font-size: 20px; /* 調整商品名稱的大小 */
+  font-size: 15px; /* 調整商品名稱的大小 */
+}
+
+.cart-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.3s ease-in-out;
+}
+.cart-hidden {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease-in-out;
 }
 
 .tabs {
@@ -397,7 +460,7 @@ header {
 .restaurant-item {
   min-width: 250px;
     height: 200px;
-    background: linear-gradient(135deg, #f1efef, #a3d77c);
+    background: linear-gradient(135deg, #f1efef, #96fa5c);
     margin-right: 20px;
     border-radius: 8px;
     display: flex;
@@ -419,29 +482,84 @@ header {
     text-align: center;
 }
 
-/* 營養查詢 */
-.nutrition-query {
-  margin: 20px 0;
+.nutrition-query-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 50px;
+  background-color: #c8fff9;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.nutrition-query h3 {
-  margin-bottom: 10px;
+.nutrition-title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 30px;
+  color: #2e1515;
 }
 
-.nutrition-query input {
-  display: block;
-  margin: 10px 0;
-  padding: 5px;
-  width: 80%;
+.nutrition-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
-.nutrition-query button {
-  padding: 10px;
-  background-color: #8CAE68;
-  color: white;
+.nutrition-field label {
+  flex: 1;
+  font-size: 18px;
+  color: #555;
+}
+
+.nutrition-button {
+  padding: 10px 15px;
   border: none;
+  border-radius: 4px;
+  background-color: #4caf50;
+  color: white;
+  font-size: 16px;
   cursor: pointer;
+  margin-left: 10px;
+  transition: background-color 0.3s;
 }
+
+.nutrition-button:hover {
+  background-color: #45a049;
+}
+
+
+.selected {
+  background: linear-gradient(to right, #81b5ea, #41c44c); ;
+  color: white;
+}
+
+.query-results {
+  margin-top: 20px;
+}
+
+.query-results h4 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.query-results ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.query-results li {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.no-results {
+  text-align: center;
+  color: #090505;
+  font-size: 18px;
+  margin-top: 20px;
+}
+
+
 
 .latest-offers {
   margin-top: 20px;
