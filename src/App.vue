@@ -100,7 +100,7 @@
             <h4>查詢結果:</h4>
             <ul>
               <li v-for="item in queryResults" :key="item.id">
-                {{ item.name }} - 蛋白質: {{ item.protein }}g, 熱量: {{ item.calories }}kcal, 脂質: {{ item.fat }}g, 糖份: {{ item.sugar }}g
+                {{ item.name }} - 蛋白質: {{ item.protein }}g, 熱量: {{ item.calories }}kcal, 脂質: {{ item.fat }}g, 碳水: {{ item.carbo }}g,餐廳: {{ item.restaurant_name}}
               </li>
             </ul>
           </div>
@@ -143,13 +143,13 @@
   
       const queryResults = ref([]);
       const queried = ref(false);
-      const selectedNutrients = ref({ protein: null, calories: null, fat: null, sugar: null });
+      const selectedNutrients = ref({ protein: null, calories: null, fat: null, carbo: null });
   
       const nutrients = [
         { key: 'protein', label: '蛋白質' },
         { key: 'calories', label: '熱量' },
         { key: 'fat', label: '脂質' },
-        { key: 'sugar', label: '糖份' }
+        { key: 'carbo', label: '碳水' }
       ];
   
       const cartItems = ref([
@@ -239,7 +239,7 @@
 
       // 重置所有選擇
       const resetSelections = () => {
-        selectedNutrients.value = { protein: null, calories: null, fat: null, sugar: null };
+        selectedNutrients.value = { protein: null, calories: null, fat: null, carbo: null };
         queryResults.value = [];
         queried.value = false;
       };

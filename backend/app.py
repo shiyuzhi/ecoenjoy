@@ -26,7 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blacklist.db'
 jwt = JWTManager(app)  # 初始化 JWTManager
 
 # 資料庫設置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:ecoenjoy2024@localhost:3306/ecoenjoydata'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
 app.config['SECRET_KEY'] = '548755585214562255632556999369954556'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -68,15 +68,43 @@ class TokenBlacklist(db.Model):
 
     def __init__(self, jti):
         self.jti = jti
+#地區餐廳
+class Subcat(db.Model):
+    __tablename__ = 'subcat'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(30), nullable=False)
+    address = db.Column(db.String(30), nullable=False)
+    type = db.Column(db.String(30), nullable=False)
+    maincat_id = db.Column(db.Integer, db.ForeignKey("maincat.id"), nullable=False)
 # 定義食物的資料庫模型
 class Food(db.Model):
     __tablename__ = 'foods' 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+    price = db.Column(db.Integer,nullable=False)
+    carbo = db.Column(db.Float, nullable=False)
     protein = db.Column(db.Float, nullable=False)
-    calories = db.Column(db.Float, nullable=False)
     fat = db.Column(db.Float, nullable=False)
-    sugar = db.Column(db.Float, nullable=False)
+    calories = db.Column(db.Float, nullable=False)
+    score = db.Column(db.Integer, nullable=False, default=0)  # 評分
+    subcat_id = db.Column(db.Integer, db.ForeignKey("subcat.id"), nullable=False)
+#食物評論
+# class Comment(db.Model):
+#     __tablename__ = 'comment'
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     user = db.Column(db.String(80), primary_key=True)
+#     data = db.Column(db.String(100), nullable=False)
+#     likes = db.Column(db.Integer, nullable=False, default=0) #點讚數
+#     replies = db.Column(db.Integer, nullable=False, default=0) #回覆數
+#     info_id = db.Column(db.Integer, db.ForeignKey("info.id"), nullable=False)
+#     parent_comment_id = db.Column(db.Integer, db.ForeignKey("comment.id"), nullable=True)  # 父評論ID
+#歷史訂單
+# class Record(db.Model):
+#     __tablename__ = 'record'
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+#     info_id = db.Column(db.Integer, db.ForeignKey('info.id'), nullable=False)
+#     timestamp = db.Column(db.DateTime, nullable=False, default=db.datetime.utcnow)
 
 
 # 檢查 token 是否在黑名單中
@@ -201,7 +229,7 @@ def get_foods():
             return jsonify({"error": "營養素和等級參數數量不匹配"}), 400
 
         # 檢查 nutrient 和 level 是否為有效值
-        valid_nutrients = ['protein', 'calories', 'fat', 'sugar']
+        valid_nutrients = ['protein', 'calories', 'fat', 'carbo']
         valid_levels = ['high', 'low']
 
         filters = []
@@ -215,20 +243,20 @@ def get_foods():
                 if nutrient == 'protein':
                     filters.append(Food.protein > 20)  # 高蛋白質
                 elif nutrient == 'calories':
-                    filters.append(Food.calories > 200)  # 高熱量
+                    filters.append(Food.calories > 400)  # 高熱量
                 elif nutrient == 'fat':
-                    filters.append(Food.fat > 10)  # 高脂肪
-                elif nutrient == 'sugar':
-                    filters.append(Food.sugar > 5)  # 高糖
+                    filters.append(Food.fat > 20)  # 高脂肪
+                elif nutrient == 'carbo':
+                    filters.append(Food.carbo > 50)  # 高糖
             elif level == 'low':
                 if nutrient == 'protein':
                     filters.append(Food.protein <= 20)  # 低蛋白質
                 elif nutrient == 'calories':
-                    filters.append(Food.calories <= 200)  # 低熱量
+                    filters.append(Food.calories <= 400)  # 低熱量
                 elif nutrient == 'fat':
-                    filters.append(Food.fat <= 10)  # 低脂肪
-                elif nutrient == 'sugar':
-                    filters.append(Food.sugar <= 5)  # 低糖
+                    filters.append(Food.fat <= 20)  # 低脂肪
+                elif nutrient == 'carbo':
+                    filters.append(Food.carbo <= 50)  # 低糖
 
         # 將所有條件結合起來
         if filters:
@@ -243,15 +271,23 @@ def get_foods():
         if not results:
             return jsonify({"message": "沒有符合條件的食物"}), 200
 
-        # 構建返回的結果列表
-        food_list = [{
-            'id': food.id,
-            'name': food.name,
-            'protein': food.protein,
-            'calories': food.calories,
-            'fat': food.fat,
-            'sugar': food.sugar
-        } for food in results]
+        # 構建返回的結果列表，包含餐廳名稱
+        food_list = []
+        for food in results:
+            # 查詢與該 food 相關的餐廳
+            restaurant = Subcat.query.filter_by(id=food.subcat_id).first()
+
+            food_data = {
+                'id': food.id,
+                'name': food.name,
+                'protein': food.protein,
+                'calories': food.calories,
+                'fat': food.fat,
+                'carbo': food.carbo,
+                'score': food.score,
+                'restaurant_name': restaurant.name if restaurant else '未知餐廳'
+            }
+            food_list.append(food_data)
 
         return jsonify(food_list), 200
 
