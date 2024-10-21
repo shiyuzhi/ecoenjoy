@@ -8,7 +8,7 @@ import Profile from '../views/Profile.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import DietarySuggestions from '../views/DietarySuggestions.vue'; 
-
+import DietLog from '../views/DietLog.vue'; 
 
 const routes = [
   {path: '/', name: 'Home',component: Home,},
@@ -20,6 +20,7 @@ const routes = [
   { path: '/Login', component: Login},
   { path: '/Register', component: Register},
   { path: '/dietary-suggestions', component: DietarySuggestions },
+  { path: '/diet-log', component: DietLog }, 
 ];
 
 const router = createRouter({

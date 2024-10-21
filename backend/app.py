@@ -12,7 +12,6 @@ from sqlalchemy import and_
 
 
 
-
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
 # 配置 CORS，允許來自前端的跨域請求並支持攜帶憑證（如 cookies）
@@ -26,7 +25,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blacklist.db'
 jwt = JWTManager(app)  # 初始化 JWTManager
 
 # 資料庫設置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:ecoenjoy2024@localhost:3306/ecoenjoydata'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
 app.config['SECRET_KEY'] = '548755585214562255632556999369954556'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -294,6 +293,8 @@ def get_foods():
     except Exception as e:
         app.logger.error(f'Error in get_foods: {str(e)}')
         return jsonify({"error": "內部伺服器錯誤"}), 500
-
+    
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # 自動創建資料表
     app.run(debug=True)  # 確保這行存在
