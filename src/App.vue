@@ -117,6 +117,54 @@
             </li>
           </ul>
         </div>
+
+         <!-- 底部-->
+        <footer>
+          <div class="footer-content">
+            <div class="footer-section">
+              <h4>Services</h4>
+              <ul>
+                <li><a href="#">Contact Us</a></li>
+              </ul>
+            </div>
+            <div class="footer-section">
+              <h4>Quick Links</h4>
+              <ul>
+                <li><a href="#">Foods</a></li>
+                <li><a href="#">Community</a></li>
+              </ul>
+            </div>
+            <div class="footer-section">
+              <h4>Legal</h4>
+              <ul>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms and Conditions</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <div class="social-icons">
+              <a href="#"><i class="fa fa-facebook"></i></a>
+              <a href="#"><i class="fa fa-instagram"></i></a>
+            </div>
+            <div class="language-selector">
+              <select id="language" onchange="changeLanguage()">
+                <option value="en">English</option>
+                <option value="zh">繁體中文</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="ru">Русский</option>
+                <option value="it">Italiano</option>
+                <option value="pt">Português</option>
+                <option value="ar">العربية</option>
+              </select>
+            </div>
+            <p>&copy; 2024 ecoenjoy. All rights reserved.</p>
+          </div>
+        </footer>
       </div>
     </div>
   </div>
@@ -598,6 +646,77 @@ header {
   color: #000000;                                            
 }
 
+footer {
+  background-color: #1eb8a6;
+  margin-top: 20px;
+  color: #fff;
+  padding: 15px 0;
+  text-align: center;
+  border-radius: 20px; 
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: 20px;
+}
+
+.footer-section h4 {
+  font-weight: bold;
+}
+
+.footer-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-section ul li {
+  margin: 8px 0;
+}
+
+.footer-section ul li a {
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s; /* 添加過渡效果 */
+}
+
+.footer-section ul li a:hover {
+  color: #f39c12; /* 懸停顏色 */
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center; /* 垂直置中 */
+  padding: 10px; 
+}
+.social-icons a {
+  color: #fff;
+  margin-right: 10px;
+  font-size: 1.5rem;
+}
+
+.language-selector select {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #fff;
+  padding: 5px;
+  border-radius: 10px; 
+  cursor: pointer; 
+}
+
+.language-selector select:hover {
+  border-color: #f39c12; 
+  transform: translateX(-5px); 
+}
+
+p {
+  margin: 0;
+  text-align: right;
+} 
+
+
 @media (max-width: 768px) {
   .sidebar {
     width: 100%; 
@@ -619,5 +738,7 @@ header {
     height: auto; 
     margin-bottom: 10px; 
   }
+
+
 }
 </style>
