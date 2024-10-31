@@ -82,7 +82,7 @@
   }
   
   .user-input textarea {
-    width: 100%;
+    width: 80%;
     height: 80px;
     border: 1px solid #ffd3d3;
     border-radius: 5px;
