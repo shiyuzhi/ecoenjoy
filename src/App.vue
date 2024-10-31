@@ -20,22 +20,26 @@
 
     <div class="main-content">
       <header>
-        <div class="menu-icon" @click="toggleSidebar">☰</div>
-        <div class="auth-buttons">
-          <router-link to="/Login">
-            <button>登入</button>
-          </router-link>
-          <router-link to="/register">
-            <button>註冊</button>
-          </router-link>
+        <div class="menu-icon" @click="toggleSidebar">☰</div>   
+        <div class="logo-container">
+          <img v-if="logo" :src="logo" alt="Ecoenjoy Logo" class="logo" />
+          <p v-else>圖片加載失敗</p>
         </div>
-        <div class="location-selector">
-          <select v-model="maincat_selected">
-            <option v-for="maincat in json_maincats" :key="maincat.id" :value="maincat.id">
-              {{ maincat.name }}
-            </option>
-          </select>
-        </div>
+          <div class="auth-buttons">
+            <router-link to="/Login">
+              <button>登入</button>
+            </router-link>
+            <router-link to="/register">
+              <button>註冊</button>
+            </router-link>
+          </div>
+          <div class="location-selector">
+            <select v-model="maincat_selected">
+              <option v-for="maincat in json_maincats" :key="maincat.id" :value="maincat.id">
+                {{ maincat.name }}
+              </option>
+            </select>
+          </div>
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
@@ -174,7 +178,8 @@
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import axios from 'axios';
-  
+  import logo from './assets/LOGO.png'; 
+
   export default {
     setup() {
       const router = useRouter();
@@ -349,6 +354,7 @@
         fetchFoods,
         nutrients,
         resetSelections,
+        logo,
       };
     },
   };
@@ -715,6 +721,15 @@ p {
   margin: 0;
   text-align: right;
 } 
+
+.logo-container {
+  text-align: center; 
+}
+
+.logo {
+  width: 100px; 
+  height: auto; 
+}
 
 
 @media (max-width: 768px) {
