@@ -36,7 +36,10 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
+  inject: ["maincat_selected"], // 注入 maincat_selected
   data() {
     return {
       selectedRestaurant: '',
@@ -49,6 +52,14 @@ export default {
     totalPrice() {
       return this.cart.reduce((total, item) => total + item.price, 0);
     },
+  },
+  watch: {
+    maincat_selected: {
+      handler(newMaincat) {
+        this.fetchRestaurants(newMaincat); // 當 maincat_selected 變化時重新加載餐廳資料
+      },
+      immediate: true // 初次加載時也執行
+    }
   },
   methods: {
     addToCart(item) {
@@ -68,14 +79,23 @@ export default {
     checkout() {
       alert('結帳功能尚未實現');
     },
+    async fetchRestaurants(maincatId) {
+      if (maincatId) {
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/subcat/${maincatId}`);
+          this.restaurants = response.data;
+        } catch (error) {
+          console.error("獲取餐廳資料失敗:", error);
+          this.restaurants = []; // 如果出錯，清空餐廳列表
+        }
+      } else {
+        this.restaurants = []; // 如果沒有選擇地區，清空餐廳列表
+      }
+    }
   },
   mounted() {
-    // 初始化餐廳資料 (這裡可以使用 API)
-    this.restaurants = [
-      { id: 1, name: '餐廳 A' },
-      { id: 2, name: '餐廳 B' },
-    ];
-  },
+    this.fetchRestaurants(this.maincat_selected); // 初始化加載餐廳資料
+  }
 };
 </script>
 

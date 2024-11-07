@@ -171,11 +171,16 @@
 </template>
 
 <script>
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, provide, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import axios from 'axios';
-  
+  import Delivery from "./views/Delivery.vue";
+
   export default {
+    components: {
+      Delivery
+    },
+
     setup() {
       const router = useRouter();
       const user = ref(null);
@@ -267,6 +272,10 @@
           console.error("獲取主類別失敗:", error);
         }
       };
+
+      // 將 maincat_selected 和 get_all_maincat 提供給子組件
+      provide("maincat_selected", maincat_selected);
+      provide("get_all_maincat", get_all_maincat);
   
       const get_all_offers = async () => {
             try {
