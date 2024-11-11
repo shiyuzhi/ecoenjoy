@@ -66,7 +66,7 @@ export default {
       ];
     },
     checkout() {
-      alert('結帳功能尚未實現');
+      alert('結帳功能');
     },
   },
   mounted() {

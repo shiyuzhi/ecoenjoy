@@ -80,7 +80,7 @@
 
         <!-- 營養查詢區域 -->
         <div class="nutrition-query-container">
-          <h1 class="nutrition-title">營養價值查詢</h1>
+          <h1 class="nutrition-title">營養需求</h1>
       
           <!-- 營養素選擇區域 -->
           <div>
@@ -102,7 +102,7 @@
       
           <!-- 查詢結果區域 -->
           <div class="query-results" v-if="queryResults.length > 0">
-            <h4>查詢結果:</h4>
+            <h4>推薦結果:</h4>
             <ul>
               <li v-for="item in queryResults" :key="item.id">
                 {{ item.name }} - 蛋白質: {{ item.protein }}g, 熱量: {{ item.calories }}kcal, 脂質: {{ item.fat }}g, 碳水: {{ item.carbo }}g,餐廳: {{ item.restaurant_name}}
@@ -179,6 +179,8 @@
   import { useRouter } from 'vue-router';
   import axios from 'axios';
   import logo from './assets/LOGO.png'; 
+  import pizzaImage from './assets/PIZZA.jpg';
+import chickenImage from './assets/CHICKEN.jpg';
 
   export default {
     setup() {
@@ -355,6 +357,8 @@
         nutrients,
         resetSelections,
         logo,
+        pizzaImage,
+        chickenImage,
       };
     },
   };
