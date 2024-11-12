@@ -39,7 +39,7 @@ class MainCategory(db.Model):
     __tablename__ = 'maincat'  # 設置資料表名稱為 maincat
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-
+    subcats = db.relationship("Subcat", back_populates="maincat") #與 Subcat 之間的關聯
 # 定義 Offer 資料表
 class Offer(db.Model):
     __tablename__ = 'offers'
@@ -75,6 +75,8 @@ class Subcat(db.Model):
     address = db.Column(db.String(30), nullable=False)
     type = db.Column(db.String(30), nullable=False)
     maincat_id = db.Column(db.Integer, db.ForeignKey("maincat.id"), nullable=False)
+    maincat = db.relationship("MainCategory", back_populates="subcats")  
+    foods = db.relationship("Food", back_populates="subcat")  # 反向關聯
 # 定義食物的資料庫模型
 class Food(db.Model):
     __tablename__ = 'foods' 
@@ -87,6 +89,8 @@ class Food(db.Model):
     calories = db.Column(db.Float, nullable=False)
     score = db.Column(db.Integer, nullable=False, default=0)  # 評分
     subcat_id = db.Column(db.Integer, db.ForeignKey("subcat.id"), nullable=False)
+    subcat = db.relationship("Subcat", back_populates="foods")  # 反向關聯
+
 #食物評論
 # class Comment(db.Model):
 #     __tablename__ = 'comment'
@@ -130,23 +134,42 @@ def get_main_categories():
         return jsonify({'error': str(e)}), 500
 
 
-# maincat_id 查詢
+
+
+# 查詢 Subcat API
 @app.route('/subcat/<int:maincat_id>', methods=['GET'])
-def get_restaurants_by_maincat(maincat_id):
-    # 查詢符合 maincat_id 的所有餐廳
-    subcats = Subcat.query.filter_by(maincat_id=maincat_id).all()
-    
-    # 格式化結果為 JSON 格式
-    result = []
-    for subcat in subcats:
-        result.append({
-            'id': subcat.id,
-            'name': subcat.name,
-            'address': subcat.address,
-            'type': subcat.type,
-        })
-    
-    return jsonify(result)
+def get_subcats(maincat_id):
+    try:
+        subcats = Subcat.query.filter_by(maincat_id=maincat_id).all()
+        if subcats:
+            return jsonify([{'id': subcat.id, 'name': subcat.name, 'address': subcat.address} for subcat in subcats])
+        else:
+            return jsonify({"message": "未找到相關的餐廳區域"}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 根據 Subcat 名稱查詢菜單
+@app.route('/menu/<string:subcat_name>', methods=['GET'])
+def get_menu(subcat_name):
+    try:
+        subcat = Subcat.query.filter_by(name=subcat_name).first()
+        if subcat:
+            foods = Food.query.filter_by(subcat_id=subcat.id).all()
+            menu = [{
+                "id": food.id,
+                "name": food.name,
+                "price": food.price,
+                "carbo": food.carbo,
+                "protein": food.protein,
+                "fat": food.fat,
+                "calories": food.calories,
+                "score": food.score
+            } for food in foods]
+            return jsonify(menu)
+        else:
+            return jsonify({"message": "餐廳區域不存在"}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # 建立 API 路由來取得優惠資料
@@ -232,6 +255,13 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     return jsonify({"msg": "請提供有效的 token"}), 401
+
+#結帳
+@app.route('/checkout', methods=['GET', 'POST'])
+def checkout():
+    # 處理 checkout 的邏輯
+    return jsonify({"message": "Checkout Page"})
+
 
 #食物分類
 @app.route('/foods', methods=['GET'])
