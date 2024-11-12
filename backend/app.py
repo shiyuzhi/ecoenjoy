@@ -133,9 +133,6 @@ def get_main_categories():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
-
 # 查詢 Subcat API
 @app.route('/subcat/<int:maincat_id>', methods=['GET'])
 def get_subcats(maincat_id):
