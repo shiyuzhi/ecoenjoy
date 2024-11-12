@@ -25,7 +25,7 @@
     <div class="order-summary" v-if="cart.length">
       <h3>訂單總覽</h3>
       <div class="cart-item" v-for="(item, index) in cart" :key="index">
-        <span>{{ item.name }} - {{ item.price }} 元</span>
+        <span>{{ item.name }} - {{ item.quantity }} x {{ item.price }} 元</span>
         <button @click="removeFromCart(index)" class="remove-button">移除</button>
       </div>
       <p class="total-price">總價: {{ totalPrice }} 元</p>
@@ -36,7 +36,10 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
+  inject: ["maincat_selected"],
   data() {
     return {
       selectedRestaurant: '',
@@ -47,37 +50,88 @@ export default {
   },
   computed: {
     totalPrice() {
-      return this.cart.reduce((total, item) => total + item.price, 0);
+      return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
     },
   },
+  watch: {
+    maincat_selected: {
+      handler(newMaincat) {
+        this.fetchRestaurants(newMaincat); // 當 maincat_selected 變化時重新加載餐廳資料
+      },
+      immediate: true // 初次加載時也執行
+    }
+  },
   methods: {
-    addToCart(item) {
-      this.cart.push(item);
+    async fetchRestaurants(maincatId) {
+      if (maincatId) {
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/subcat/${maincatId}`);
+          this.restaurants = response.data;
+        } catch (error) {
+          console.error("獲取餐廳資料失敗:", error);
+          this.restaurants = [];
+        }
+      } else {
+        this.restaurants = [];
+      }
     },
+
+    async fetchMenu() {
+      if (this.selectedRestaurant) {
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/menu/${this.selectedRestaurant}`);
+          this.menu = response.data;
+        } catch (error) {
+          console.error("無法載入菜單資料:", error);
+          this.menu = [];
+        }
+      }
+    },
+
+    addToCart(item) {
+      const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        this.cart.push({ ...item, quantity: 1 });
+      }
+    },
+
     removeFromCart(index) {
       this.cart.splice(index, 1);
     },
-    fetchMenu() {
-      // 根據選擇的餐廳獲取菜單 (這裡可以使用 API)
-      this.menu = [
-        { id: 1, name: '外送菜品 1', description: '描述 1', price: 100, image: 'image_url_1' },
-        { id: 2, name: '外送菜品 2', description: '描述 2', price: 150, image: 'image_url_2' },
-        // 添加更多的菜品
-      ];
-    },
-    checkout() {
-      alert('結帳功能');
-    },
+
+    async checkout() {
+      if (this.cart.length === 0) {
+        alert("購物車為空，請先選擇商品！");
+        return;
+      }
+
+      const totalAmount = this.totalPrice;
+      try {
+        const response = await axios.post("http://127.0.0.1:5000/checkout", {
+          cart: this.cart,
+          totalPrice: totalAmount,
+        });
+
+        if (response.status === 200) {
+          alert("結帳成功！");
+          this.cart = [];
+        } else {
+          alert("結帳失敗，請稍後再試！");
+        }
+      } catch (error) {
+        console.error("結帳錯誤:", error);
+        alert("結帳時發生錯誤，請稍後再試！");
+      }
+    }
   },
   mounted() {
-    // 初始化餐廳資料 (這裡可以使用 API)
-    this.restaurants = [
-      { id: 1, name: '餐廳 A' },
-      { id: 2, name: '餐廳 B' },
-    ];
-  },
+    this.fetchRestaurants(this.maincat_selected);
+  }
 };
 </script>
+
 
 <style scoped>
 .delivery {

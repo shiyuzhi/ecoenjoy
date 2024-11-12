@@ -180,7 +180,9 @@
   import axios from 'axios';
   import logo from './assets/LOGO.png'; 
   import pizzaImage from './assets/PIZZA.jpg';
-import chickenImage from './assets/CHICKEN.jpg';
+  import chickenImage from './assets/CHICKEN.jpg';
+  import { provide } from 'vue';
+
 
   export default {
     setup() {
@@ -274,6 +276,10 @@ import chickenImage from './assets/CHICKEN.jpg';
           console.error("獲取主類別失敗:", error);
         }
       };
+
+      // 提供 maincat_selected 和 get_all_maincat 給子組件
+      provide("maincat_selected", maincat_selected);
+      provide("get_all_maincat", get_all_maincat);
   
       const get_all_offers = async () => {
             try {

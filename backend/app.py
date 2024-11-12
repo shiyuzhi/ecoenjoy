@@ -129,6 +129,26 @@ def get_main_categories():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# maincat_id 查詢
+@app.route('/subcat/<int:maincat_id>', methods=['GET'])
+def get_restaurants_by_maincat(maincat_id):
+    # 查詢符合 maincat_id 的所有餐廳
+    subcats = Subcat.query.filter_by(maincat_id=maincat_id).all()
+    
+    # 格式化結果為 JSON 格式
+    result = []
+    for subcat in subcats:
+        result.append({
+            'id': subcat.id,
+            'name': subcat.name,
+            'address': subcat.address,
+            'type': subcat.type,
+        })
+    
+    return jsonify(result)
+
+
 # 建立 API 路由來取得優惠資料
 @app.route('/offers', methods=['GET'])
 def get_offers():
