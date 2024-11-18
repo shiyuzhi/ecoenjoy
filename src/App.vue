@@ -11,8 +11,10 @@
       <nav aria-label="主要導航">
         <ul>
           <li><router-link to="/profile">會員資料</router-link></li>
+          <li><router-link to="/nutrition-query">營養需求</router-link></li>
           <li><router-link to="/dietary-suggestions">個人飲食建議</router-link></li>
           <li><router-link to="/diet-log">飲食日誌</router-link></li>
+          <li><router-link to="/history-diet">歷史飲食紀錄</router-link></li>
           <li><a href="#" @click.prevent="handleSignOutClick">登出</a></li>
         </ul>
       </nav>
