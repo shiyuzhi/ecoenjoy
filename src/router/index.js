@@ -9,6 +9,7 @@ import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import DietarySuggestions from '../views/DietarySuggestions.vue'; 
 import DietLog from '../views/DietLog.vue'; 
+import HistoryDiet from '../views/HistoryDiet.vue';
 
 const routes = [
   {path: '/', name: 'Home',component: Home,},
@@ -21,6 +22,7 @@ const routes = [
   { path: '/Register', component: Register},
   { path: '/dietary-suggestions', component: DietarySuggestions },
   { path: '/diet-log', component: DietLog }, 
+  { path: '/history-diet', name: 'HistoryDiet', component: HistoryDiet},
 ];
 
 const router = createRouter({

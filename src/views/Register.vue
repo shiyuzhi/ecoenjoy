@@ -36,45 +36,39 @@ export default {
       email: '',
       password: '',
       confirmPassword: '',
+      message: "",
     };
+  },
+  computed: {
+    passwordMismatch() {
+      return this.password !== this.confirmPassword;
+    },
   },
   methods: {
     async handleRegister() {
-      if (this.password !== this.confirmPassword) {
-        alert("密碼不一致！");
-        return;
-      }
-
-      // 可以加入正則表達式來檢查 email 格式
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(this.email)) {
-        alert("請輸入有效的電子郵件地址！");
+      if (this.passwordMismatch) {
+        this.message = "密碼和確認密碼不一致";
         return;
       }
 
       try {
-        const response = await axios.post('http://localhost:5000/register', {
+        const response = await axios.post("http://127.0.0.1:5000/register", {
           username: this.username,
           email: this.email,
           password: this.password,
         });
 
-        if (response.data.success) {
-          alert(`註冊成功！用戶名: ${this.username}`);
-          // 可以在這裡重定向到登入頁面
-          this.toggleLoginModal();
-        } else {
-          alert('註冊失敗！請檢查您的資料。');
+        if (response.status === 201) {
+          this.message = "註冊成功，請前往登入頁面";
+          setTimeout(() => {
+            this.$router.push("/login");
+          }, 2000);
         }
       } catch (error) {
-        console.error(error);
-        alert('發生錯誤，請稍後再試。');
+        this.message = error.response?.data?.message || "註冊失敗，請重試";
       }
+      alert(this.message);
     },
-    toggleLoginModal() {
-      // 切換到登入畫面
-      this.$router.push('/login'); 
-    }
   },
 };
 </script>
