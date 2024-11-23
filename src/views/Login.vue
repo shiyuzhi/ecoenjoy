@@ -65,6 +65,7 @@
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('username', response.data.user.username);
             localStorage.setItem('email', response.data.user.email);
+            localStorage.setItem('id', response.data.user.id);
 
             // 更新 UI 顯示用戶資料
             this.username = response.data.user.username;
