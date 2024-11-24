@@ -45,27 +45,15 @@
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
-        <div class="cart-icon" @click="toggleCart">🛒</div>
+         <!-- Home 按鈕 -->
+        <router-link to="/">
+          <button class="home-btn">首頁</button>
+        </router-link>
       </header>
-
-      <div v-if="isCartVisible" class="cart">
-        <h1>購物車清單</h1>
-        <div class="search-bar">
-          <input type="text" v-model="searchQuery" @keyup.enter="handleSearch" placeholder="搜尋商品" />
-        </div>
-        <ul>
-          <li v-for="item in filteredCartItems" :key="item.id">
-            {{ item.name }} - 數量: {{ item.quantity }}
-            <button @click="removeItem(item.id)">刪除</button>
-          </li>
-        </ul>
-        <p v-if="filteredCartItems.length === 0">購物車是空的</p>
-      </div>
 
       <div class="content">
         <router-view></router-view>
-        
-
+      
         <h3>餐廳推薦</h3>
         <div class="restaurant-slider">
           <div class="restaurant-item">餐廳 1</div>
@@ -141,9 +129,7 @@
   import { ref, onMounted, computed } from 'vue';  // 添加 computed
   import { useRouter } from 'vue-router';
   import axios from 'axios';
-  import logo from './assets/LOGO.png'; 
-  import pizzaImage from './assets/PIZZA.jpg';
-  import chickenImage from './assets/CHICKEN.jpg';
+  import logo from './assets/LOGO.png';
   import { provide } from 'vue';
 
   export default {
@@ -154,31 +140,6 @@
       const json_maincats = ref([]); 
       const maincat_selected = ref(""); 
       const offers = ref([]); 
-      const searchQuery = ref('');
-      const isCartVisible = ref(false); 
-  
-      const toggleCart = () => {
-        isCartVisible.value = !isCartVisible.value;
-      };
-  
-      const cartItems = ref([
-        { id: 1, name: '商品 A', quantity: 2 },
-        { id: 2, name: '商品 B', quantity: 1 },
-        { id: 3, name: '商品 C', quantity: 3 },
-      ]);
-      
-      const filteredCartItems = computed(() => {
-        if (!searchQuery.value) {
-          return cartItems.value;
-        }
-        return cartItems.value.filter(item =>
-          item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-        );
-      });
-  
-      const removeItem = (itemId) => {
-        cartItems.value = cartItems.value.filter(item => item.id !== itemId);
-      };
   
       const toggleSidebar = () => {
         sidebarActive.value = !sidebarActive.value;
@@ -255,14 +216,7 @@
         offers, 
         toggleSidebar,
         handleSignOutClick,
-        cartItems,
-        isCartVisible,
-        toggleCart,
-        filteredCartItems,
-        removeItem,
         logo,
-        pizzaImage,
-        chickenImage,
       };
     },
   };
