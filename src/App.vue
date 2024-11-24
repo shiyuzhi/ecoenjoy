@@ -63,13 +63,8 @@
       </div>
 
       <div class="content">
-        <div class="tabs">
-          <router-link to="/delivery"><button>外送</button></router-link>
-          <router-link to="/pickup"><button>自取</button></router-link>
-          <router-link to="/community"><button>社群</button></router-link>
-          <router-link to="/custom-menu"><button>自定義菜單</button></router-link>
-        </div>
         <router-view></router-view>
+        
 
         <h3>餐廳推薦</h3>
         <div class="restaurant-slider">

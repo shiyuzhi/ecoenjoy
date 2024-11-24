@@ -33,7 +33,8 @@ export default {
   name: 'Home',
   methods: {
     goToOrderPage() {
-      this.$router.push('/order'); // 假設有一個路由指向訂單頁面
+      // 路由跳轉到外送頁面
+      this.$router.push('/delivery');
     }
   }
 };
