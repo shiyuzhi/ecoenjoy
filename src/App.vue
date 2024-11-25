@@ -125,12 +125,13 @@
   </div>
 </template>
 
+
 <script>
-  import { ref, onMounted, computed } from 'vue';  // 添加 computed
+  import { ref, onMounted, computed, provide, watch } from 'vue'; 
   import { useRouter } from 'vue-router';
   import axios from 'axios';
   import logo from './assets/LOGO.png';
-  import { provide } from 'vue';
+  import dishImage from './assets/dish1.jpg';
 
   export default {
     setup() {
@@ -140,16 +141,35 @@
       const json_maincats = ref([]); 
       const maincat_selected = ref(""); 
       const offers = ref([]); 
-  
+      const restaurants = ref([]);  // 儲存餐廳區域資料
+      const slideIndex = ref(0);  // 輪播的當前索引
+
+      // 載入餐廳資料
+      const loadRestaurants = async (maincatId) => {
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/subcat/${maincatId}`);
+          if (response.data.message) {
+            alert(response.data.message);  // 顯示API返回的錯誤訊息
+          }
+          restaurants.value = response.data; 
+        } catch (error) {
+          console.error("獲取餐廳資料失敗:", error);
+        }
+      };
+
+
+      // 切換側邊欄
       const toggleSidebar = () => {
         sidebarActive.value = !sidebarActive.value;
       };
-  
+
+      // 獲取用戶資料
       const getUserData = () => {
         const storedUsername = sessionStorage.getItem('username');
         user.value = storedUsername ? { username: storedUsername } : null;
       };
-  
+
+      // 登出處理
       const handleSignOutClick = async () => {
         if (confirm("確定要登出嗎？")) {
           try {
@@ -158,11 +178,11 @@
               alert('未找到有效的 Token');
               return;
             }
-  
+
             const response = await axios.post('http://localhost:5000/logout', {}, {
               headers: { Authorization: `Bearer ${token}` }
             });
-  
+
             if (response.status === 200) {
               user.value = null; 
               sessionStorage.removeItem('token');
@@ -176,7 +196,8 @@
           }
         }
       };
-  
+
+      // 獲取主類別資料
       const get_all_maincat = async () => {
         try {
           const response = await axios.get("http://127.0.0.1:5000/maincat");
@@ -189,19 +210,49 @@
         }
       };
 
-      // 提供 maincat_selected 和 get_all_maincat 給子組件
+      // 提供資料給子組件
       provide("maincat_selected", maincat_selected);
       provide("get_all_maincat", get_all_maincat);
-  
+
+      // 獲取優惠資料
       const get_all_offers = async () => {
-            try {
-              const response = await axios.get("http://127.0.0.1:5000/offers");
-              offers.value = response.data;
-            } catch (error) {
-              console.error("獲取優惠資料失敗:", error);
-            }
-          };
-  
+        try {
+          const response = await axios.get("http://127.0.0.1:5000/offers");
+          offers.value = response.data;
+        } catch (error) {
+          console.error("獲取優惠資料失敗:", error);
+        }
+      };
+
+      // 控制輪播滑動
+      const nextSlide = () => {
+        if (restaurants.value.length > 0) {
+          slideIndex.value = (slideIndex.value + 1) % restaurants.value[0].menu.length;
+        }
+      };
+
+      const prevSlide = () => {
+        const currentRestaurant = restaurants.value.find(r => r.id === maincat_selected.value);
+        if (currentRestaurant && currentRestaurant.menu) {
+          slideIndex.value = (slideIndex.value - 1 + currentRestaurant.menu.length) % currentRestaurant.menu.length;
+        }
+      };
+
+      // 計算滑動位置
+      const slidePosition = computed(() => {
+        const currentRestaurant = restaurants.value.find(r => r.id === maincat_selected.value);
+        if (currentRestaurant && currentRestaurant.menu) {
+          return -slideIndex.value * 220;  
+        }
+        return 0;
+      });
+
+      // 當主類別選擇變動時，重新載入餐廳資料
+      watch(maincat_selected, (newValue) => {
+        loadRestaurants(newValue);
+      });
+
+
       onMounted(() => {
         get_all_maincat();
         get_all_offers();
@@ -217,6 +268,12 @@
         toggleSidebar,
         handleSignOutClick,
         logo,
+        restaurants, 
+        loadRestaurants,
+        dishImage,
+        slidePosition,
+        nextSlide,
+        prevSlide
       };
     },
   };
@@ -310,6 +367,7 @@ header {
   align-items: center;
 }
 
+
 .location-selector select {
   font-size: 16px;
 }
@@ -319,86 +377,50 @@ header {
   font-size: 16px;
 }
 
-.cart {
-  position: absolute;
-  top: 60px;
-  right: 20px;
-  background: #89b35d;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 10px;
-  width: 250px;
-  box-shadow: 0 2px 8px rgba(27, 216, 2, 0.2);
-  z-index: 800;
-}
-.cart-icon {
-  font-size: 40px;
-}
-
-.cart h1 {
-  font-size: 40px; /* 可以調整標題大小 */
-}
-
-.cart li {
-  font-size: 15px; /* 調整商品名稱的大小 */
-}
-
-.cart-visible {
-  opacity: 1;
-  transform: translateY(0);
-  transition: all 0.3s ease-in-out;
-}
-.cart-hidden {
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: all 0.3s ease-in-out;
-}
-
-.tabs {
-  display: flex;
-  justify-content: space-between;
-  margin: 20px 0;
-}
-
-.tabs button {
-  padding: 10px;
-  background-color: #8CAE68;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
 
 .restaurant-slider {
-    display: flex;
-    overflow-x: auto;
-    padding: 30px 0;
-    scroll-behavior: smooth;
+  display: flex;
+  width: 100%;  /* 設定輪播區域寬度 */
+  margin: 20px auto;
+  visibility: visible;  /* 確保它在正常情況下顯示 */
 }
 
-.restaurant-item {
-  min-width: 250px;
-    height: 200px;
-    background: linear-gradient(135deg, #f1efef, #96fa5c);
-    margin-right: 20px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 10px rgba(211, 0, 0, 0.2);
-    transition: transform 0.3s, box-shadow 0.6s;
+.slider-wrapper {
+  display: flex;
+  transition: transform 0.5s ease;
 }
 
-.restaurant-item:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 6px 15px rgba(226, 195, 195, 0.3);
+.slider-item {
+  flex: 0 0 auto;
+  width: 200px; 
+  margin-right: 20px;
+  text-align: center;
 }
 
-.restaurant-item h4 {
-    font-family: 'Arial', sans-serif;
-    font-size: 18px;
-    color: #e1dedeee;
-    text-align: center;
+.food-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover; /* 保持圖片比例 */
 }
+
+.food-name {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.food-score {
+  margin-top: 10px;
+}
+
+.star {
+  font-size: 20px;
+  color: lightgray; /* 默認為空心星 */
+}
+
+.star.filled {
+  color: #ffbc00; /* 實心星 */
+}
+
 
 
 
@@ -540,6 +562,12 @@ p {
     margin-bottom: 10px; 
   }
 
-
 }
+
+@media (max-width: 768px) {
+  .food-name {
+    font-size: 14px;  /* 在小螢幕上縮小字體 */
+  }
+}
+
 </style>

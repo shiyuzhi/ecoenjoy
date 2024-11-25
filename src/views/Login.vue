@@ -50,38 +50,38 @@
     methods: {
       async handleLogin() {
         try {
-          const response = await axios.post('http://localhost:5000/login', {
+          const response = await axios.post("http://127.0.0.1:5000/login", {
             username: this.username,
             password: this.password,
           });
-  
+
           console.log('Login response:', response.data); // 確認登入回應
-  
-          if (response.data.success) {
-            const accessToken = response.data.access_token;
-  
-            // 儲存 token 和用戶名
-            if (this.rememberMe) {
-              localStorage.setItem('token', accessToken);
-              localStorage.setItem('username', this.username);
-            } else {
-              sessionStorage.setItem('token', accessToken);
-              sessionStorage.setItem('username', this.username);
-            }
-    
-    
-            // 
-            await this.getUserData(accessToken);  // 使用 Token 獲取用戶資料
-            // 登入成功提示
-            alert(`登入成功！歡迎來到ecoenjoy，${this.username}`);// 或者使用其他的提示方式
-          } else {
-            alert('登入失敗！請檢查您的使用者名稱和密碼。');
+
+          if (response.status === 200) {
+            this.message = `登入成功！歡迎來到ecoenjoy，${this.username}`;
+          
+            // 儲存 Token 和用戶資料到 localStorage 或 sessionStorage
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('username', response.data.user.username);
+            localStorage.setItem('email', response.data.user.email);
+            localStorage.setItem('id', response.data.user.id);
+
+            // 更新 UI 顯示用戶資料
+            this.username = response.data.user.username;
+            this.email = response.data.user.email;
+
+            setTimeout(() => {
+              console.log('正在跳轉到歷史飲食頁面');
+              this.$router.push("/"); // 跳轉
+            }, 2000);
           }
         } catch (error) {
-          console.error('登入發生錯誤:', error.response ? error.response.data : error.message);
-          alert('發生錯誤，請稍後再試。');
+          this.message = error.response?.data?.message || "登入失敗，請檢查用戶名和密碼";
         }
+        alert(this.message);
       },
+
+
       async getUserData(token) {
       try {
         const response = await axios.get('http://localhost:5000/user', {

@@ -174,7 +174,7 @@
 
           if (response.status === 200) {
             if (this.paymentMethod === 'cash') {
-              alert("餐點送達請付款！");
+              alert("餐點送達付款即可，祝您用餐愉快！");
             } else {
               alert("結帳成功！");
             }
