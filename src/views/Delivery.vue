@@ -11,7 +11,7 @@
     <div class="menu-items" v-if="menu.length">
       <h3>菜單</h3>
       <div class="menu-item" v-for="item in menu" :key="item.id">
-        <img :src="item.image" alt="菜品圖片" class="menu-image" />
+        <img :src="item.img_url" alt="菜品圖片" class="menu-image" />
         <div class="item-details">
           <h4>{{ item.name }}</h4>
           <p>{{ item.description }}</p>
