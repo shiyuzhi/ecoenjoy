@@ -12,7 +12,7 @@ from sqlalchemy import and_
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import Unauthorized
 import traceback
-
+from sqlalchemy import func
 
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
@@ -105,16 +105,19 @@ class Food(db.Model):
     subcat = db.relationship("Subcat", back_populates="foods")  # 反向關聯
     #record = db.relationship("Record", back_populates="foods")
 
-#食物評論
-# class Comment(db.Model):
-#     __tablename__ = 'comment'
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     user = db.Column(db.String(80), primary_key=True)
-#     data = db.Column(db.String(100), nullable=False)
-#     likes = db.Column(db.Integer, nullable=False, default=0) #點讚數
-#     replies = db.Column(db.Integer, nullable=False, default=0) #回覆數
-#     info_id = db.Column(db.Integer, db.ForeignKey("info.id"), nullable=False)
-#     parent_comment_id = db.Column(db.Integer, db.ForeignKey("comment.id"), nullable=True)  # 父評論ID
+class Comment(db.Model):
+    __tablename__ = 'comment'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user = db.Column(db.String(80), nullable=False)        # 用戶名稱
+    data = db.Column(db.String(200), nullable=False)       # 評論內容
+    likes = db.Column(db.Integer, nullable=False, default=0)  # 點讚數
+    replies = db.Column(db.Integer, nullable=False, default=0)  # 回覆數
+    food_id = db.Column(db.Integer, db.ForeignKey('foods.id'), nullable=False)  # 外鍵，關聯到Food表
+    parent_comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # 回覆父評論ID (可為空)
+
+    food = db.relationship('Food', backref=db.backref('comments', lazy=True))  # 關聯到Food表，取得該食物所有評論
+    parent_comment = db.relationship('Comment', remote_side=[id])  # 回覆的父評論
+
 
 #歷史訂單
 class Record(db.Model):
@@ -413,6 +416,37 @@ def get_foods():
     except Exception as e:
         app.logger.error(f'Error in get_foods: {str(e)}')
         return jsonify({"error": "內部伺服器錯誤"}), 500
+    
+# 查詢每家餐廳的平均評分並排序
+@app.route('/api/top-restaurants', methods=['GET'])
+def get_top_restaurants():
+   
+    top_restaurants = db.session.query(
+        Subcat.id,
+        Subcat.name,
+        Subcat.address,
+        func.avg(Food.score).label('avg_score')
+    ).join(Food, Subcat.id == Food.subcat_id)  # 連接餐廳與菜品
+    
+    # 此處不需要反斜線，直接將每個方法放在單獨一行
+    top_restaurants = top_restaurants.group_by(Subcat.id) \
+                                     .order_by(func.avg(Food.score).desc()) \
+                                     .limit(5).all()
+
+    # 組織回傳資料
+    restaurants = []
+    for restaurant in top_restaurants:
+        # 查詢餐廳的菜品
+        foods = db.session.query(Food.name, Food.score).filter(Food.subcat_id == restaurant.id).all()
+        restaurant_data = {
+            'name': restaurant.name,
+            'address': restaurant.address,
+            'avg_score': round(restaurant.avg_score, 2),
+            'foods': [{'name': food.name, 'score': food.score} for food in foods]
+        }
+        restaurants.append(restaurant_data)
+
+    return jsonify(restaurants)  # 返回 JSON 格式的資料
 
 
 @app.route('/checkout', methods=['POST'])

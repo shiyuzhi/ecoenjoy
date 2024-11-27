@@ -8,9 +8,9 @@
       </option>
     </select>
 
-    <div class="menu-items" v-if="menu.length">
+    <div v-if="menu.length && !loadingMenu" class="menu-items">
       <h3>菜單</h3>
-      <div class="menu-item" v-for="item in menu" :key="item.id">
+      <div v-for="item in menu" :key="item.id" class="menu-item">
         <img :src="item.image" alt="菜品圖片" class="menu-image" />
         <div class="item-details">
           <h4>{{ item.name }}</h4>
@@ -19,6 +19,28 @@
 
           <!-- 加入購物車的按鈕 -->
           <button @click="addToCart(item)" class="add-to-cart-button">加入購物車</button>
+          
+            <!-- 顯示評論區 -->
+          <div v-if="item.reviews && item.reviews.length">
+            <h5>評論</h5>
+            <div v-for="review in item.reviews" :key="review.id" class="review">
+              <p><strong>{{ review.user_name }}:</strong> {{ review.content }}</p>
+              <div class="rating">
+                <span v-for="n in review.rating" :key="n">⭐</span> 
+              </div>
+            </div>
+            <button @click="toggleShowAllReviews(item)" v-if="!item.showAllReviews">
+              查看更多評論
+            </button>
+            <div v-if="item.showAllReviews">
+              <!-- 顯示更多評論 -->
+              <button @click="toggleShowAllReviews(item)">收起評論</button>
+            </div>
+          </div>
+          <!-- 顯示寫評論的功能 -->
+          <div v-if="isLoggedIn">
+            <button @click="openReviewModal(item)">寫評論</button>
+          </div>
         </div>
       </div>
     </div>

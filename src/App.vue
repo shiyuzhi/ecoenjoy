@@ -53,16 +53,21 @@
 
       <div class="content">
         <router-view></router-view>
-      
-        <h3>餐廳推薦</h3>
-        <div class="restaurant-slider">
-          <div class="restaurant-item">餐廳 1</div>
-          <div class="restaurant-item">餐廳 2</div>
-          <div class="restaurant-item">餐廳 3</div>
-          <div class="restaurant-item">餐廳 4</div>
-          <div class="restaurant-item">餐廳 5</div>
+
+        <H3>餐廳推薦</H3>
+        <div class="restaurant-list">
+          <!-- 列出每家餐廳 -->
+          <div class="restaurant-item" v-for="restaurant in restaurants" :key="restaurant.id">
+            <h3>{{ restaurant.name }}</h3>
+            <p>{{ restaurant.address }}</p>
+            <div class="rating">
+              <span class="star">⭐</span>
+              <p class="avg-rating">平均評分：{{ restaurant.avg_score }}</p>
+            </div>
+          </div>
         </div>
         
+
         <!-- 最新優惠區域 -->
         <div class="latest-offers">
           <h2>最新優惠</h2>
@@ -125,7 +130,6 @@
   </div>
 </template>
 
-
 <script>
   import { ref, onMounted, computed, provide, watch } from 'vue'; 
   import { useRouter } from 'vue-router';
@@ -145,18 +149,19 @@
       const slideIndex = ref(0);  // 輪播的當前索引
 
       // 載入餐廳資料
-      const loadRestaurants = async (maincatId) => {
+      const loadTopRestaurants = async () => {
         try {
-          const response = await axios.get(`http://127.0.0.1:5000/subcat/${maincatId}`);
-          if (response.data.message) {
-            alert(response.data.message);  // 顯示API返回的錯誤訊息
-          }
-          restaurants.value = response.data; 
+          const response = await axios.get("http://127.0.0.1:5000/api/top-restaurants");
+          console.log(response.data);  // 確認回傳資料
+          // 轉換 avg_score 為浮動數字
+          restaurants.value = response.data.map(restaurant => ({
+            ...restaurant,
+            avg_score: parseFloat(restaurant.avg_score)  // 確保 avg_score 是數字
+          }));
         } catch (error) {
           console.error("獲取餐廳資料失敗:", error);
         }
       };
-
 
       // 切換側邊欄
       const toggleSidebar = () => {
@@ -249,16 +254,20 @@
 
       // 當主類別選擇變動時，重新載入餐廳資料
       watch(maincat_selected, (newValue) => {
-        loadRestaurants(newValue);
+        loadTopRestaurants(); // 調用 loadTopRestaurants
       });
+       
+        
 
 
+      // 在組件掛載時加載資料
       onMounted(() => {
         get_all_maincat();
         get_all_offers();
         getUserData();
+        loadTopRestaurants();  // 正確加載餐廳資料
       });
-    
+
       return {
         user, 
         sidebarActive,
@@ -268,16 +277,17 @@
         toggleSidebar,
         handleSignOutClick,
         logo,
-        restaurants, 
-        loadRestaurants,
+        restaurants,  
+        loadTopRestaurants, 
         dishImage,
         slidePosition,
         nextSlide,
-        prevSlide
+        prevSlide,
       };
     },
   };
 </script>
+
 
   
   
@@ -377,52 +387,55 @@ header {
   font-size: 16px;
 }
 
-
-.restaurant-slider {
+.restaurant-list {
   display: flex;
-  width: 100%;  /* 設定輪播區域寬度 */
-  margin: 20px auto;
-  visibility: visible;  /* 確保它在正常情況下顯示 */
+  overflow-x: scroll ;
+  gap: 10px;
+  padding: 20px;
 }
 
-.slider-wrapper {
+.restaurant-item {
+  width: 500px; 
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
   display: flex;
-  transition: transform 0.5s ease;
+  flex-direction: column; 
+  justify-content: space-between; 
 }
 
-.slider-item {
-  flex: 0 0 auto;
-  width: 200px; 
-  margin-right: 20px;
-  text-align: center;
+.restaurant-item h3 {
+  font-size: 20px;
 }
 
-.food-image {
-  width: 100%;
-  height: 150px;
-  object-fit: cover; /* 保持圖片比例 */
+.restaurant-item p {
+  margin: 5px 0;
 }
 
-.food-name {
-  font-weight: bold;
-  margin-top: 10px;
+.restaurant-item ul {
+  list-style-type: none;
+  padding-left: 10px;
 }
 
-.food-score {
-  margin-top: 10px;
+.restaurant-item li {
+  margin-bottom: 10px;
+}
+
+.rating {
+  display: flex;
+  align-items: center; 
+  margin-top: 30px;  
 }
 
 .star {
-  font-size: 20px;
-  color: lightgray; /* 默認為空心星 */
+  font-size: 15px;
+  margin-right: 5px;  /* 星星之間有間距 */
 }
 
-.star.filled {
-  color: #ffbc00; /* 實心星 */
+.restaurant-item .avg-rating {
+  font-size: 14px;
+  font-weight: bold;
 }
-
-
-
 
 .latest-offers {
   margin-top: 20px;
