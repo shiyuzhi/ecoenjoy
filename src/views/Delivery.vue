@@ -12,7 +12,7 @@
     <div v-if="menu.length && !loadingMenu" class="menu-items">
       <h3>菜單</h3>
       <div v-for="item in menu" :key="item.id" class="menu-item">
-        <img :src="item.image" alt="菜品圖片" class="menu-image" />
+        <img :src="item.img_url" alt="菜品圖片" class="menu-image" />
         <div class="item-details">
           <h4>{{ item.name }}</h4>
           <p>{{ item.description }}</p>
@@ -48,13 +48,18 @@
     <p v-else>請選擇一間餐廳以查看菜單。</p>
 
     <div class="order-summary" v-if="cart.length">
+       <!-- 餐廳資訊按鈕 -->
+       <router-link :to="`/store/${selectedRestaurantId}`">
+        <button class="view-store-button">
+          餐廳資訊
+        </button>
+       </router-link>
       <h3>訂單總覽</h3>
       <div class="cart-item" v-for="(item, index) in cart" :key="index">
         <span>{{ item.name }} - {{ item.quantity }} x {{ item.price }} 元</span>
         <button @click="removeFromCart(index)" class="remove-button">移除</button>
       </div>
       <p class="total-price">總價: {{ totalPrice }} 元</p>
-
       <!-- 付款方式選擇 -->
       <div class="payment-method">
         <label>
@@ -123,6 +128,9 @@
     },
 
     methods: {
+      viewStore() {
+        this.$router.push(`/store/${this.selectedRestaurantId}`);
+      },
       // 獲取餐廳資料
       async fetchRestaurants(maincatId) {
         if (!maincatId) return this.restaurants = [];
@@ -340,6 +348,7 @@
 .checkout-button:hover {
   background: linear-gradient(to right, #0056b3, #004494); 
 }
+<<<<<<< HEAD
 </style>
 =======
 <template>
@@ -686,3 +695,34 @@
 </style>
 
 >>>>>>> views/delivery
+=======
+
+.view-store-button {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  background-color: #3897ea; /* 顯眼的橘色背景 */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 增加立體感 */
+  transition: all 0.3s ease; /* 平滑動畫效果 */
+}
+
+.view-store-button:hover {
+  background-color: #3f1f15; 
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); 
+  transform: scale(1.05); 
+}
+
+.view-store-button:active {
+  background-color: #43180a; 
+  box-shadow: none; 
+  transform: scale(0.95); 
+}
+
+</style>
+>>>>>>> d5969a5ab304dcee78be40168a8c38c8a1f78f6a
