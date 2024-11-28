@@ -19,28 +19,6 @@
 
           <!-- 加入購物車的按鈕 -->
           <button @click="addToCart(item)" class="add-to-cart-button">加入購物車</button>
-          
-            <!-- 顯示評論區 -->
-          <div v-if="item.reviews && item.reviews.length">
-            <h5>評論</h5>
-            <div v-for="review in item.reviews" :key="review.id" class="review">
-              <p><strong>{{ review.user_name }}:</strong> {{ review.content }}</p>
-              <div class="rating">
-                <span v-for="n in review.rating" :key="n">⭐</span> 
-              </div>
-            </div>
-            <button @click="toggleShowAllReviews(item)" v-if="!item.showAllReviews">
-              查看更多評論
-            </button>
-            <div v-if="item.showAllReviews">
-              <!-- 顯示更多評論 -->
-              <button @click="toggleShowAllReviews(item)">收起評論</button>
-            </div>
-          </div>
-          <!-- 顯示寫評論的功能 -->
-          <div v-if="isLoggedIn">
-            <button @click="openReviewModal(item)">寫評論</button>
-          </div>
         </div>
       </div>
     </div>
@@ -100,9 +78,24 @@
         isCardValid: true,
         loadingMenu: false, 
         loadingCheckout: false, 
+        isLoggedIn: false, // 是否已登入
+        token: null, // 儲存 JWT token（若登入）
+        userId: null, // 用戶 ID (可從登入時設置)
       };
     },
-
+    created() {
+      // 嘗試從 localStorage 載入登入狀態
+      const userToken = localStorage.getItem("token");
+      const userId = localStorage.getItem("id");
+      console.log(userToken)
+      console.log(userId)
+      if (userToken && userId) {
+        this.isLoggedIn = true;
+        this.token = userToken;
+        this.userId = parseInt(userId);
+      }
+    },
+    //##############################################
     computed: {
       // 計算購物車的總價
       totalPrice() {
@@ -127,9 +120,6 @@
     },
 
     methods: {
-      viewStore() {
-        this.$router.push(`/store/${this.selectedRestaurantId}`);
-      },
       // 獲取餐廳資料
       async fetchRestaurants(maincatId) {
         if (!maincatId) return this.restaurants = [];
@@ -182,41 +172,46 @@
 
       // 執行結帳操作
       async checkout() {
-        if (this.cart.length === 0) {
-          alert("購物車為空，請先選擇商品！");
+        if (!this.cart.length) {
+          alert("購物車為空，無法結帳");
           return;
         }
 
-        if (this.paymentMethod === 'credit_card' && !this.isCardValid) {
-          alert("信用卡號格式不正確或尚未填寫！請檢查後再試。");
-          return;
-        }
-
-        // 進行結帳流程
-        this.loadingCheckout = true;
-        const totalAmount = this.totalPrice;
-        
         try {
-          const response = await axios.post("http://127.0.0.1:5000/checkout", {
-            cart: this.cart,
-            totalPrice: totalAmount,
-          });
+          // 構造要發送的訂單數據
+          const orderData = {
+            user_id: this.userId, // 傳遞用戶 ID
+            cart: this.cart.map(item => ({
+              info_id: item.id, // 商品的 ID
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          };
+          // 如果已登入，附加用戶 ID 和 Token
+          if (this.isLoggedIn) {
+            orderData.user_id = this.userId; // 傳遞用戶 ID
+          }
+          console.log(this.isLoggedIn)
+          console.log(this.token)
+          // 設定請求頭部（包含 Token）
+          const headers = {};
+          if (this.isLoggedIn && this.token) {
+            headers.Authorization = `Bearer ${this.token}`;
+          }
+          // 發送 POST 請求到後端
+          const response = await axios.post("http://127.0.0.1:5000/checkout", orderData, { headers });
 
           if (response.status === 200) {
-            if (this.paymentMethod === 'cash') {
-              alert("餐點送達付款即可，祝您用餐愉快！");
-            } else {
-              alert("結帳成功！");
-            }
-            this.cart = []; // 結帳後清空購物車
+            alert("結帳成功！");
+            // 清空購物車
+            this.cart = [];
           } else {
-            alert("結帳失敗，請稍後再試！");
+            alert("結帳失敗：" + (response.data.error || "未知錯誤"));
           }
         } catch (error) {
-          console.error("結帳錯誤:", error);
-          alert("結帳時發生錯誤，請稍後再試！");
-        } finally {
-          this.loadingCheckout = false; // 完成結帳
+          console.error("結帳過程中發生錯誤：", error.response?.data || error.message);
+          alert("結帳過程中發生錯誤，請稍後再試。");
         }
       },
     },
