@@ -214,7 +214,7 @@ def get_menu(subcat_name):
                 "protein": food.protein,
                 "fat": food.fat,
                 "calories": food.calories,
-                "score": food.score,
+                "score": food.score,+
                 "img_url": food.img_url  # 圖片 URL
             } for food in foods]
             return jsonify(menu)
@@ -554,9 +554,10 @@ def checkout():
     return jsonify({"message": "結帳成功（訪客身份，未儲存訂單）"}), 200
 
 
-@app.route('/history', methods=['GET'])
+@app.route('/history', methods=['GET','POST'])
 @jwt_required()  # 用戶必須登入
 def get_history():
+    #current_user_id = get_jwt_identity()
     # 獲取當前用戶身份
     current_user = get_jwt_identity()
     user = User.query.filter_by(id=current_user).first()
@@ -568,16 +569,21 @@ def get_history():
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    # 查詢當天的訂單
-    records = Record.query.filter(
-        Record.user_id == user.id,
-        Record.timestamp >= start_of_day,
-        Record.timestamp <= end_of_day
-    ).all()
+    # 查詢當天訂單
+    # records = Record.query.filter(
+    #     Record.user_id == user.id,
+    #     Record.timestamp >= start_of_day,
+    #     Record.timestamp <= end_of_day
+    # ).all()
+    # print(records)
 
-    # 如果今天沒有訂單
+    # 查詢該用戶的歷史訂單
+    records = Record.query.filter_by(user_id=user.id).all()
     if not records:
-        return jsonify({"message": "今天無紀錄"}), 404
+        return jsonify({"message": "沒有歷史訂單"}), 200
+
+    # if not records:
+    #     return jsonify({"message": "今天無紀錄"}), 404
 
     # 計算總營養成分並準備卡片數據
     total_carbo = total_protein = total_fat = total_calories = 0
@@ -585,23 +591,32 @@ def get_history():
 
     for record in records:
         food = Food.query.get(record.info_id)
-        if food:
+        if not food:
+            continue
+
+        # 確保 record.timestamp 是 offset-aware
+        record_time = record.timestamp
+        if record_time.tzinfo is None:
+            record_time = record_time.replace(tzinfo=timezone.utc)
+
+        # 如果訂單是當天的，累加營養數據    
+        if start_of_day <= record_time <= end_of_day:
             total_carbo += food.carbo
             total_protein += food.protein
             total_fat += food.fat
             total_calories += food.calories
 
-            history.append({
-                "timestamp": record.timestamp.isoformat(),
-                "food_name": food.name,
-                "restaurant_name": food.subcat.name,
-                "price": food.price,
-                "carbo": food.carbo,
-                "protein": food.protein,
-                "fat": food.fat,
-                "calories": food.calories,
-                "img_url": food.img_url  # 包含圖片 URL
-            })
+        history.append({
+            "timestamp": record.timestamp,
+            "food_name": food.name,
+            "restaurant_name": food.subcat.name,
+            "price": food.price,
+            "carbo": food.carbo,
+            "protein": food.protein,
+            "fat": food.fat,
+            "calories": food.calories,
+            "img_url": food.img_url  # 包含圖片 URL
+        })
 
     return jsonify({
         "history": history,
