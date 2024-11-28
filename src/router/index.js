@@ -8,6 +8,7 @@ import Register from '../views/Register.vue';
 import DietarySuggestions from '../views/DietarySuggestions.vue'; 
 import DietLog from '../views/DietLog.vue'; 
 import HistoryDiet from '../views/HistoryDiet.vue';
+import StoreDetails from '../views/StoreDetails.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Home }, 
@@ -18,8 +19,8 @@ const routes = [
   { path: '/Register', component: Register},
   { path: '/dietary-suggestions', component: DietarySuggestions },
   { path: '/diet-log', component: DietLog }, 
-  { path: '/history-diet', name: 'HistoryDiet', component: HistoryDiet,
-  },
+  { path: '/history-diet', name: 'HistoryDiet', component: HistoryDiet},
+  { path: '/store/:id', name: 'StoreDetails', component: StoreDetails, props: true,},
 ];
 
 const router = createRouter({

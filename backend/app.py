@@ -103,7 +103,7 @@ class Food(db.Model):
     score = db.Column(db.Integer, nullable=False, default=0)  # 評分
     subcat_id = db.Column(db.Integer, db.ForeignKey("subcat.id"), nullable=False)
     subcat = db.relationship("Subcat", back_populates="foods")  # 反向關聯
-    #record = db.relationship("Record", back_populates="foods")
+    img_url = db.Column(db.String(255), nullable=True)  
 
 class Comment(db.Model):
     __tablename__ = 'comment'
@@ -178,7 +178,7 @@ with app.app_context():
 
 @app.route('/', methods=['GET'])
 
-# 獲取主類別 API
+# 獲取地區 API
 @app.route('/maincat', methods=['GET'])
 def get_main_categories():
     try:
@@ -214,13 +214,32 @@ def get_menu(subcat_name):
                 "protein": food.protein,
                 "fat": food.fat,
                 "calories": food.calories,
-                "score": food.score
+                "score": food.score,
+                "img_url": food.img_url  # 圖片 URL
             } for food in foods]
             return jsonify(menu)
         else:
             return jsonify({"message": "餐廳區域不存在"}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# 獲取餐廳詳細資料的路由（GET /subcat/{id}）：
+@app.route('/api/subcat/<int:id>', methods=['GET'])
+def get_store_details(id):
+    try:
+        subcat = Subcat.query.get(id)  # 根據 subcat_id 獲取餐廳詳細資料
+        if subcat:
+            store_data = {
+                "id": subcat.id,
+                "name": subcat.name,
+                "address": subcat.address,
+                "type": subcat.type
+            }
+            return jsonify(store_data), 200
+        else:
+            return jsonify({"message": "餐廳不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # 建立 API 路由來取得優惠資料
@@ -448,6 +467,56 @@ def get_top_restaurants():
 
     return jsonify(restaurants)  # 返回 JSON 格式的資料
 
+# 獲取評論資料的路由
+@app.route('/api/comments/<int:subcat_id>', methods=['GET'])
+def get_comments_by_store(subcat_id):
+    try:
+        subcat = Subcat.query.get(subcat_id)
+        if subcat:
+            # 根據 subcat 查找所有食物，並且查找這些食物的評論
+            foods = Food.query.filter_by(subcat_id=subcat_id).all()
+            all_comments = []
+            for food in foods:
+                # 獲取每個食物的評論
+                comments = Comment.query.filter_by(food_id=food.id).all()
+                for comment in comments:
+                    all_comments.append({
+                        "user": comment.user,
+                        "data": comment.data,
+                        "likes": comment.likes,
+                        "replies": comment.replies
+                    })
+            return jsonify(all_comments), 200
+        else:
+            return jsonify({"message": "餐廳區域不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/comments/<int:food_id>', methods=['GET'])
+def get_comments(food_id):
+    # 查詢該食物ID的所有評論
+    comments = Comment.query.filter_by(food_id=food_id).all()
+    # 格式化評論數據
+    comment_list = [{"user": comment.user, "data": comment.data, "likes": comment.likes, "replies": comment.replies} for comment in comments]
+    return jsonify(comment_list), 200
+
+# 點讚功能的路由
+@app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
+def like_comment(comment_id):
+    try:
+        # 查找該評論
+        comment = Comment.query.get(comment_id)
+        if comment:
+            # 增加點讚數
+            comment.likes += 1
+            db.session.commit()
+            return jsonify({"message": "點讚成功", "likes": comment.likes}), 200
+        else:
+            return jsonify({"message": "評論不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/checkout', methods=['POST'])
 @jwt_required()  # 用戶可選擇是否提供 JWT
@@ -531,7 +600,7 @@ def get_history():
                 "protein": food.protein,
                 "fat": food.fat,
                 "calories": food.calories,
-                "image_url": food.image_url or "http://localhost:5000/static/assets/CHICKEN.jpg",  # 處理圖片 URL
+                "img_url": food.img_url  # 包含圖片 URL
             })
 
     return jsonify({
