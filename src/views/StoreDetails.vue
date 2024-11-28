@@ -9,7 +9,8 @@
         <p>地址: {{ restaurant.address }}</p>
         <p>類型: {{ restaurant.type }}</p>
       </div>
-      <p v-else>正在加載餐廳資料...</p>
+      <p v-else-if="loading">正在加載餐廳資料...</p>
+      <p v-else>餐廳資訊加載失敗，請稍後重試。</p>
   
       <!-- 評論列表 -->
       <div v-if="comments.length">
@@ -30,7 +31,7 @@
   
   <script>
   import axios from "axios";
-  
+
   export default {
     name: "StoreDetails",
     props: {
@@ -41,26 +42,33 @@
     },
     data() {
       return {
-        restaurant: null, // 餐廳資料
-        comments: [], // 評論資料
+        restaurant: null, 
+        comments: [], 
+        loading: true, 
+        error: false, 
       };
     },
     methods: {
-      // 獲取餐廳詳細資訊與評論
       async fetchDetails() {
-        try {
-          // 獲取餐廳詳細資料
-          const restaurantResponse = await axios.get(`/subcat/${this.id}`);
-          this.restaurant = restaurantResponse.data;
+        this.loading = true;
+        this.error = false;
   
-          // 獲取餐廳的評論
-          const commentsResponse = await axios.get(`/comments/${this.id}`);
+        try {
+          // 並行請求餐廳和評論資料
+          const [restaurantResponse, commentsResponse] = await Promise.all([
+            axios.get(`/subcat/${this.id}`),
+            axios.get(`/comments/${this.id}`),
+          ]);
+  
+          this.restaurant = restaurantResponse.data;
           this.comments = commentsResponse.data;
         } catch (error) {
           console.error("加載資料失敗:", error);
+          this.error = true;
+        } finally {
+          this.loading = false;
         }
       },
-      // 點讚功能
       async likeComment(commentId) {
         try {
           await axios.post(`/comments/like/${commentId}`);
@@ -68,23 +76,22 @@
           if (comment) comment.likes++;
         } catch (error) {
           console.error("點讚失敗:", error);
+          alert("點讚失敗，請稍後重試。");
         }
       },
     },
     watch: {
-      // 當 ID 改變時重新加載資料
-      id() {
-        this.fetchDetails();
-      },
+      id: "fetchDetails", // 當 ID 改變時重新加載資料
     },
     mounted() {
-      this.fetchDetails(); // 初次加載時獲取資料
+      this.fetchDetails();
     },
   };
-  </script>
-  
-  <style scoped>
-  .store-details {
+</script>
+
+
+<style scoped>
+.store-details {
     padding: 20px;
     font-family: Arial, sans-serif;
   }
@@ -132,5 +139,4 @@
   .like-button:hover {
     background-color: #218838;
   }
-</style>
-  
+</style>  

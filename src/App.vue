@@ -169,9 +169,21 @@
       };
 
       // 獲取用戶資料
-      const getUserData = () => {
-        const storedUsername = sessionStorage.getItem('username');
-        user.value = storedUsername ? { username: storedUsername } : null;
+      const fetchUser = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) return;
+
+          const response = await axios.get('http://127.0.0.1:5000/user', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          user.value = response.data.user;
+        } catch (error) {
+          console.error('獲取用戶資訊失敗：', error);
+          localStorage.removeItem('token');
+        }
       };
 
       // 登出處理
@@ -257,14 +269,12 @@
         loadTopRestaurants(); // 調用 loadTopRestaurants
       });
        
-        
-
 
       // 在組件掛載時加載資料
       onMounted(() => {
         get_all_maincat();
         get_all_offers();
-        getUserData();
+        fetchUser();
         loadTopRestaurants();  // 正確加載餐廳資料
       });
 
