@@ -17,7 +17,7 @@
         </div>
         <a href="#" class="forgot-password">忘記密碼?</a>
       </div>
-      <button type="submit" class="submit-button">SIGN IN</button>
+      <button type="submit" class="submit-button" @click="getUserData">SIGN IN</button>
       <div class="social-login">
         <p>使用社交媒體登入</p>
         <div class="social-buttons">
@@ -43,6 +43,7 @@
       return {
         username: '',
         password: '',
+        message: "",
         rememberMe: false, // 記住我選項
         user: null, // 用戶資料
       };
@@ -54,12 +55,12 @@
             username: this.username,
             password: this.password,
           });
-
+          
           console.log('Login response:', response.data); // 確認登入回應
 
           if (response.status === 200) {
             this.message = `登入成功！歡迎來到ecoenjoy，${this.username}`;
-          
+           
             // 儲存 Token 和用戶資料到 localStorage 或 sessionStorage
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('username', response.data.user.username);
@@ -71,8 +72,7 @@
             this.email = response.data.user.email;
 
             setTimeout(() => {
-              console.log('正在跳轉到歷史飲食頁面');
-              this.$router.push("/"); // 跳轉
+              this.$router.push("/"); // 導向主頁或其他頁面
             }, 2000);
           }
         } catch (error) {
@@ -80,10 +80,11 @@
         }
         alert(this.message);
       },
-
-
-      async getUserData(token) {
+      async getUserData() {
       try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         const response = await axios.get('http://localhost:5000/user', {
           headers: {
             Authorization: `Bearer ${token}`  // 確保這裡的 token 正確
@@ -93,6 +94,7 @@
         this.user = response.data.user; // 儲存用戶資料
       } catch (error) {
         console.error('獲取用戶資料失敗:', error.response ? error.response.data : error.message);
+        localStorage.removeItem("token");
         alert('獲取用戶資料失敗，請稍後再試。');
       }
     },

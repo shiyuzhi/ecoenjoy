@@ -8,6 +8,7 @@ import Register from '../views/Register.vue';
 import DietarySuggestions from '../views/DietarySuggestions.vue'; 
 import DietLog from '../views/DietLog.vue'; 
 import HistoryDiet from '../views/HistoryDiet.vue';
+import HistoryDiet from '../views/HistoryDiet.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Home }, 

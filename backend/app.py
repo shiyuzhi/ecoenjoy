@@ -12,7 +12,7 @@ from sqlalchemy import and_
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import Unauthorized
 import traceback
-from sqlalchemy import func
+
 
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
@@ -27,7 +27,7 @@ app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 jwt = JWTManager(app)  # 初始化 JWTManager
 
 # 資料庫設置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ecoenjoy_db'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:ecoenjoy2024@localhost:3306/ecoenjoy'  # 替換為正確的資料庫名字和改你的帳戶名字資料庫密碼
 app.config['SECRET_KEY'] = '548755585214562255632556999369954556' 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -51,12 +51,11 @@ class Offer(db.Model):
 
 #使用者(更新)
 class User(db.Model):
-    __tablename__ = 'user'
+    __tablename__ = 'user'  # 明確指定表名稱
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)  # 確保為 NOT NULL
-
+    password_hash = db.Column(db.String(200), nullable=False)  # 存儲哈希後的密碼
 
     def set_password(self, password):
         """使用安全哈希設置密碼"""
@@ -103,23 +102,20 @@ class Food(db.Model):
     score = db.Column(db.Integer, nullable=False, default=0)  # 評分
     subcat_id = db.Column(db.Integer, db.ForeignKey("subcat.id"), nullable=False)
     subcat = db.relationship("Subcat", back_populates="foods")  # 反向關聯
-    #record = db.relationship("Record", back_populates="foods")
+    img_url = db.Column(db.String(255), nullable=True)  # 新增欄位存圖片 URL
 
-class Comment(db.Model):
-    __tablename__ = 'comment'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user = db.Column(db.String(80), nullable=False)        # 用戶名稱
-    data = db.Column(db.String(200), nullable=False)       # 評論內容
-    likes = db.Column(db.Integer, nullable=False, default=0)  # 點讚數
-    replies = db.Column(db.Integer, nullable=False, default=0)  # 回覆數
-    food_id = db.Column(db.Integer, db.ForeignKey('foods.id'), nullable=False)  # 外鍵，關聯到Food表
-    parent_comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # 回覆父評論ID (可為空)
+#食物評論
+# class Comment(db.Model):
+#     __tablename__ = 'comment'
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     user = db.Column(db.String(80), primary_key=True)
+#     data = db.Column(db.String(100), nullable=False)
+#     likes = db.Column(db.Integer, nullable=False, default=0) #點讚數
+#     replies = db.Column(db.Integer, nullable=False, default=0) #回覆數
+#     info_id = db.Column(db.Integer, db.ForeignKey("info.id"), nullable=False)
+#     parent_comment_id = db.Column(db.Integer, db.ForeignKey("comment.id"), nullable=True)  # 父評論ID
 
-    food = db.relationship('Food', backref=db.backref('comments', lazy=True))  # 關聯到Food表，取得該食物所有評論
-    parent_comment = db.relationship('Comment', remote_side=[id])  # 回覆的父評論
-
-
-#歷史訂單
+#歷史訂單#####################################################################
 class Record(db.Model):
     __tablename__ = 'record'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -128,6 +124,7 @@ class Record(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     #foods = db.relationship("Food", back_populates="record")
     food = db.relationship('Food')
+##############################################################################
 
 # 檢查 token 是否在黑名單中
 @jwt.token_in_blocklist_loader
@@ -214,7 +211,8 @@ def get_menu(subcat_name):
                 "protein": food.protein,
                 "fat": food.fat,
                 "calories": food.calories,
-                "score": food.score
+                "score": food.score,
+                "img_url": food.img_url  # 圖片 URL
             } for food in foods]
             return jsonify(menu)
         else:
@@ -230,7 +228,7 @@ def get_offers():
     offer_list = [{'id': offer.id, 'title': offer.title, 'description': offer.description} for offer in offers]
     return jsonify(offer_list)
 
-#註冊
+#註冊(更新)
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -259,12 +257,12 @@ def register():
         return jsonify({'message': '註冊失敗', 'error': str(e)}), 500
 
 
-#登入
+#登入(更新)
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()  # 使用 request.get_json() 獲取 JSON 資料
-    username = data.get('username')  # 直接從 data 取得 username
-    password = data.get('password')  # 直接從 data 取得 password
+    data = request.get_json()
+    username = request.json.get('username')
+    password = request.json.get('password')
 
     if not username or not password:
         return jsonify({'message': '用戶名和密碼都是必需的'}), 400
@@ -285,11 +283,10 @@ def login():
         },
         'token': token
     }), 200
-
     
 
 
-#用戶資料
+#用戶資料(更新)
 @app.route('/user', methods=['GET'])
 @jwt_required()  # 確保用戶必須提供有效的 Token
 def get_user():
@@ -416,39 +413,7 @@ def get_foods():
     except Exception as e:
         app.logger.error(f'Error in get_foods: {str(e)}')
         return jsonify({"error": "內部伺服器錯誤"}), 500
-    
-# 查詢每家餐廳的平均評分並排序
-@app.route('/api/top-restaurants', methods=['GET'])
-def get_top_restaurants():
-   
-    top_restaurants = db.session.query(
-        Subcat.id,
-        Subcat.name,
-        Subcat.address,
-        func.avg(Food.score).label('avg_score')
-    ).join(Food, Subcat.id == Food.subcat_id)  # 連接餐廳與菜品
-    
-    # 此處不需要反斜線，直接將每個方法放在單獨一行
-    top_restaurants = top_restaurants.group_by(Subcat.id) \
-                                     .order_by(func.avg(Food.score).desc()) \
-                                     .limit(5).all()
-
-    # 組織回傳資料
-    restaurants = []
-    for restaurant in top_restaurants:
-        # 查詢餐廳的菜品
-        foods = db.session.query(Food.name, Food.score).filter(Food.subcat_id == restaurant.id).all()
-        restaurant_data = {
-            'name': restaurant.name,
-            'address': restaurant.address,
-            'avg_score': round(restaurant.avg_score, 2),
-            'foods': [{'name': food.name, 'score': food.score} for food in foods]
-        }
-        restaurants.append(restaurant_data)
-
-    return jsonify(restaurants)  # 返回 JSON 格式的資料
-
-
+#保存訂單資料#####################################################    
 @app.route('/checkout', methods=['POST'])
 @jwt_required()  # 用戶可選擇是否提供 JWT
 def checkout():
@@ -463,7 +428,8 @@ def checkout():
     current_user = get_jwt_identity()
     user = User.query.filter_by(id=current_user).first()
     if user:
-        # 登入用戶，保存每個商品的訂單到資料庫
+        
+        # 保存每個商品的訂單到資料庫
         for item in cart:
             info_id = item.get('info_id')  # 商品對應的 ID
             if not info_id:
@@ -477,17 +443,19 @@ def checkout():
             )
             db.session.add(record)
 
-        # 提交到資料庫
+        # 提交到資料庫 
         db.session.commit()
         return jsonify({"message": "結帳成功，訂單已儲存至歷史記錄"}), 200
 
     # 若未登入，僅返回成功訊息，不儲存至歷史記錄
     return jsonify({"message": "結帳成功（訪客身份，未儲存訂單）"}), 200
 
-
-@app.route('/history', methods=['GET'])
+    #########################################################
+#顯示歷史訂單(更新)############################################################
+@app.route('/history', methods=['GET','POST'])
 @jwt_required()  # 用戶必須登入
 def get_history():
+    #current_user_id = get_jwt_identity()
     # 獲取當前用戶身份
     current_user = get_jwt_identity()
     user = User.query.filter_by(id=current_user).first()
@@ -499,16 +467,21 @@ def get_history():
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    # 查詢當天的訂單
-    records = Record.query.filter(
-        Record.user_id == user.id,
-        Record.timestamp >= start_of_day,
-        Record.timestamp <= end_of_day
-    ).all()
+    # 查詢當天訂單
+    # records = Record.query.filter(
+    #     Record.user_id == user.id,
+    #     Record.timestamp >= start_of_day,
+    #     Record.timestamp <= end_of_day
+    # ).all()
+    # print(records)
 
-    # 如果今天沒有訂單
+    # 查詢該用戶的歷史訂單
+    records = Record.query.filter_by(user_id=user.id).all()
     if not records:
-        return jsonify({"message": "今天無紀錄"}), 404
+        return jsonify({"message": "沒有歷史訂單"}), 200
+
+    # if not records:
+    #     return jsonify({"message": "今天無紀錄"}), 404
 
     # 計算總營養成分並準備卡片數據
     total_carbo = total_protein = total_fat = total_calories = 0
@@ -516,23 +489,32 @@ def get_history():
 
     for record in records:
         food = Food.query.get(record.info_id)
-        if food:
+        if not food:
+            continue
+
+        # 確保 record.timestamp 是 offset-aware
+        record_time = record.timestamp
+        if record_time.tzinfo is None:
+            record_time = record_time.replace(tzinfo=timezone.utc)
+
+        # 如果訂單是當天的，累加營養數據    
+        if start_of_day <= record_time <= end_of_day:
             total_carbo += food.carbo
             total_protein += food.protein
             total_fat += food.fat
             total_calories += food.calories
 
-            history.append({
-                "timestamp": record.timestamp.isoformat(),
-                "food_name": food.name,
-                "restaurant_name": food.subcat.name,
-                "price": food.price,
-                "carbo": food.carbo,
-                "protein": food.protein,
-                "fat": food.fat,
-                "calories": food.calories,
-                "image_url": food.image_url or "http://localhost:5000/static/assets/CHICKEN.jpg",  # 處理圖片 URL
-            })
+        history.append({
+            "timestamp": record.timestamp,
+            "food_name": food.name,
+            "restaurant_name": food.subcat.name,
+            "price": food.price,
+            "carbo": food.carbo,
+            "protein": food.protein,
+            "fat": food.fat,
+            "calories": food.calories,
+            "img_url": food.img_url  # 包含圖片 URL
+        })
 
     return jsonify({
         "history": history,
@@ -544,6 +526,8 @@ def get_history():
         }
     }), 200
 
+################################################################################
+    
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # 自動創建資料表
