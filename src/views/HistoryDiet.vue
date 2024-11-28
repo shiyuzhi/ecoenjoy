@@ -14,7 +14,7 @@
     <!-- 訂單卡片 -->
     <div class="order-cards" v-if="history && history.length">
       <div v-for="(record, index) in history" :key="index" class="order-card">
-        <img :src="record.image_url" alt="餐點圖片" class="food-image" />
+        <img :src="record.img_url" alt="餐點圖片" class="food-image" />
         <div class="order-details">
           <h3>{{ record.food_name }}</h3>
           <p>餐廳：{{ record.restaurant_name }}</p>

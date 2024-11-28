@@ -214,7 +214,7 @@ def get_menu(subcat_name):
                 "protein": food.protein,
                 "fat": food.fat,
                 "calories": food.calories,
-                "score": food.score,+
+                "score": food.score,
                 "img_url": food.img_url  # 圖片 URL
             } for food in foods]
             return jsonify(menu)
