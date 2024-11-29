@@ -9,6 +9,10 @@
     </select>
 
     <div v-if="menu.length && !loadingMenu" class="menu-items">
+      <!-- 餐廳資訊按鈕 -->
+      <button @click="viewStore(selectedRestaurant)" class="view-store-button">
+        餐廳資訊
+      </button>
       <h3>菜單</h3>
       <div v-for="item in menu" :key="item.id" class="menu-item">
         <img :src="item.img_url" alt="菜品圖片" class="menu-image" />
@@ -25,12 +29,6 @@
     <p v-else>請選擇一間餐廳以查看菜單。</p>
 
     <div class="order-summary" v-if="cart.length">
-       <!-- 餐廳資訊按鈕 -->
-       <router-link :to="`/store/${selectedRestaurantId}`">
-        <button class="view-store-button">
-          餐廳資訊
-        </button>
-       </router-link>
       <h3>訂單總覽</h3>
       <div class="cart-item" v-for="(item, index) in cart" :key="index">
         <span>{{ item.name }} - {{ item.quantity }} x {{ item.price }} 元</span>
@@ -95,7 +93,6 @@
         this.userId = parseInt(userId);
       }
     },
-    //##############################################
     computed: {
       // 計算購物車的總價
       totalPrice() {
@@ -169,7 +166,16 @@
         const regex = /^[0-9]{16}$/; // 基本的信用卡號驗證，16位數字
         this.isCardValid = regex.test(this.creditCardNumber);
       },
-
+     
+      // 點擊餐廳資訊按鈕，跳轉到餐廳詳細頁
+      viewStore(restaurantName) {
+        const selected = this.restaurants.find(r => r.name === restaurantName);
+        if (selected && selected.id) {
+          this.$router.push(`/store/${selected.id}`);
+        } else {
+          console.error("餐廳資料無效");
+        }
+      },
       // 執行結帳操作
       async checkout() {
         if (!this.cart.length) {
@@ -219,10 +225,10 @@
     // 頁面加載時，根據選擇的主類別加載餐廳
     mounted() {
       this.fetchRestaurants(this.maincat_selected);
-      if (!this.paymentMethod) {
-        this.paymentMethod = 'cash';
-      }
-    },
+        if (!this.paymentMethod) {
+          this.paymentMethod = 'cash';
+        }
+      },
   };
 </script>
 

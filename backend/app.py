@@ -13,6 +13,8 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import Unauthorized
 import traceback
 from sqlalchemy import func
+from urllib.parse import unquote
+
 
 app = Flask(__name__)
 CORS(app)  # 允許所有來源的請求
@@ -223,24 +225,6 @@ def get_menu(subcat_name):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-# 獲取餐廳詳細資料的路由（GET /subcat/{id}）：
-@app.route('/api/subcat/<int:id>', methods=['GET'])
-def get_store_details(id):
-    try:
-        subcat = Subcat.query.get(id)  # 根據 subcat_id 獲取餐廳詳細資料
-        if subcat:
-            store_data = {
-                "id": subcat.id,
-                "name": subcat.name,
-                "address": subcat.address,
-                "type": subcat.type
-            }
-            return jsonify(store_data), 200
-        else:
-            return jsonify({"message": "餐廳不存在"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 
 # 建立 API 路由來取得優惠資料
 @app.route('/offers', methods=['GET'])
@@ -467,39 +451,56 @@ def get_top_restaurants():
 
     return jsonify(restaurants)  # 返回 JSON 格式的資料
 
-# 獲取評論資料的路由
-@app.route('/api/comments/<int:subcat_id>', methods=['GET'])
-def get_comments_by_store(subcat_id):
+# 獲取餐廳詳細資料的路由
+@app.route('/api/subcat/id/<int:id>', methods=['GET'])
+def get_store_details_by_id(id):
     try:
-        subcat = Subcat.query.get(subcat_id)
+        print(f"請求的餐廳 ID: {id}")  # 調試訊息，確認 ID 是否正確
+        subcat = Subcat.query.get(id)  # 根據 ID 查詢餐廳資料
         if subcat:
-            # 根據 subcat 查找所有食物，並且查找這些食物的評論
-            foods = Food.query.filter_by(subcat_id=subcat_id).all()
-            all_comments = []
-            for food in foods:
-                # 獲取每個食物的評論
-                comments = Comment.query.filter_by(food_id=food.id).all()
-                for comment in comments:
-                    all_comments.append({
-                        "user": comment.user,
-                        "data": comment.data,
-                        "likes": comment.likes,
-                        "replies": comment.replies
-                    })
-            return jsonify(all_comments), 200
+            store_data = {
+                "id": subcat.id,
+                "name": subcat.name,
+                "address": subcat.address,
+                "type": subcat.type
+            }
+            print(f"找到的餐廳資料: {store_data}")  # 顯示查詢結果
+            return jsonify(store_data), 200
         else:
-            return jsonify({"message": "餐廳區域不存在"}), 404
+            return jsonify({"message": "餐廳不存在"}), 404
     except Exception as e:
+        print(f"發生錯誤: {e}")  # 顯示錯誤
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/comments/<int:food_id>', methods=['GET'])
-def get_comments(food_id):
-    # 查詢該食物ID的所有評論
-    comments = Comment.query.filter_by(food_id=food_id).all()
-    # 格式化評論數據
-    comment_list = [{"user": comment.user, "data": comment.data, "likes": comment.likes, "replies": comment.replies} for comment in comments]
-    return jsonify(comment_list), 200
+
+
+# 評論
+@app.route('/api/comments/<int:subcat_id>', methods=['GET'])
+def get_comments_by_store(subcat_id):
+    try:
+        if subcat_id is None:
+            return jsonify({"error": "未提供有效的 subcat_id"}), 400
+        
+        subcat = Subcat.query.get(subcat_id)
+        if not subcat:
+            return jsonify({"message": "餐廳區域不存在"}), 404
+        
+        foods = Food.query.filter_by(subcat_id=subcat_id).all()
+        all_comments = [
+            {
+                "user": comment.user,
+                "data": comment.data,
+                "likes": comment.likes,
+                "replies": comment.replies
+            }
+            for food in foods
+            for comment in Comment.query.filter_by(food_id=food.id).all()
+        ]
+        return jsonify(all_comments), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # 點讚功能的路由
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])

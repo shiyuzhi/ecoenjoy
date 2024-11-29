@@ -20,7 +20,7 @@ const routes = [
   { path: '/dietary-suggestions', component: DietarySuggestions },
   { path: '/diet-log', component: DietLog }, 
   { path: '/history-diet', name: 'HistoryDiet', component: HistoryDiet},
-  { path: '/store/:id', name: 'StoreDetails', component: StoreDetails, props: true,},
+  { path: '/store/:id', component: StoreDetails },  
 ];
 
 const router = createRouter({

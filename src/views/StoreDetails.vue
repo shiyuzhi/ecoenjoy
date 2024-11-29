@@ -1,142 +1,61 @@
 <template>
-    <div class="store-details">
-      <!-- 返回按鈕 -->
-      <button @click="$router.back()" class="back-button">返回</button>
-  
-      <!-- 餐廳資訊 -->
-      <div v-if="restaurant">
-        <h2>{{ restaurant.name }}</h2>
-        <p>地址: {{ restaurant.address }}</p>
-        <p>類型: {{ restaurant.type }}</p>
-      </div>
-      <p v-else-if="loading">正在加載餐廳資料...</p>
-      <p v-else>餐廳資訊加載失敗，請稍後重試。</p>
-  
-      <!-- 評論列表 -->
-      <div v-if="comments.length">
-        <h3>評論</h3>
-        <ul class="comment-list">
-          <li v-for="comment in comments" :key="comment.id" class="comment-item">
-            <p><strong>{{ comment.user }}</strong>: {{ comment.data }}</p>
-            <div class="comment-actions">
-              <span>讚: {{ comment.likes }}</span>
-              <button @click="likeComment(comment.id)" class="like-button">點讚</button>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <p v-else-if="restaurant">尚無評論</p>
-    </div>
-  </template>
-  
-  <script>
-  import axios from "axios";
+  <div class="store-details">
+    <button @click="goBack" class="back-button">返回</button>
+    <h2>{{ restaurant ? restaurant.name : '餐廳名稱' }}</h2>
+    <p>{{ restaurant ? restaurant.address : '餐廳地址' }}</p>
+    <p>{{ restaurant ? restaurant.type : '餐廳類型' }}</p>
+  </div>
+</template>
 
+<script>
+  import axios from 'axios';
+  
   export default {
-    name: "StoreDetails",
-    props: {
-      id: {
-        type: String,
-        required: true,
-      },
-    },
+    inject: ['selectedRestaurant'],  // 從父組件注入 selectedRestaurant
     data() {
       return {
-        restaurant: null, 
-        comments: [], 
-        loading: true, 
-        error: false, 
+        restaurant: null,  // 儲存餐廳詳細資料
       };
     },
+    created() {
+      // 優先檢查 selectedRestaurant 是否已經傳遞過來
+      if (this.selectedRestaurant) {
+        this.restaurant = this.selectedRestaurant;  // 使用父組件傳遞的資料
+        console.log("從父組件接收到餐廳資料:", this.restaurant);  // 輸出確認
+      } else {
+        const restaurantId = this.$route.params.id;  // 獲取餐廳 ID
+        console.log('Restaurant ID:', restaurantId);  // 輸出 ID，確認是否正確
+        if (restaurantId) {
+          this.fetchRestaurantDetails(restaurantId);  // 根據 ID 發送請求
+        } else {
+          console.error('無效的餐廳 ID');
+        }
+      }
+    },
     methods: {
-      async fetchDetails() {
-        this.loading = true;
-        this.error = false;
-  
+      // 發送請求並獲取餐廳詳細資料
+      async fetchRestaurantDetails(id) {
+        console.log("發送請求的餐廳 ID:", id);  // 顯示請求的 ID
         try {
-          // 並行請求餐廳和評論資料
-          const [restaurantResponse, commentsResponse] = await Promise.all([
-            axios.get(`/subcat/${this.id}`),
-            axios.get(`/comments/${this.id}`),
-          ]);
-  
-          this.restaurant = restaurantResponse.data;
-          this.comments = commentsResponse.data;
+          const response = await axios.get(`http://127.0.0.1:5000/api/subcat/id/${id}`);  // 使用 ID 查詢
+          console.log("收到的餐廳資料:", response.data);  // 輸出回應資料
+          this.restaurant = response.data;  // 儲存餐廳資料
         } catch (error) {
-          console.error("加載資料失敗:", error);
-          this.error = true;
-        } finally {
-          this.loading = false;
+          console.error("餐廳資料加載失敗", error);  // 顯示錯誤訊息
         }
       },
-      async likeComment(commentId) {
-        try {
-          await axios.post(`/comments/like/${commentId}`);
-          const comment = this.comments.find((c) => c.id === commentId);
-          if (comment) comment.likes++;
-        } catch (error) {
-          console.error("點讚失敗:", error);
-          alert("點讚失敗，請稍後重試。");
-        }
+      // 返回上一頁
+      goBack() {
+        this.$router.go(-1);  // 返回上一頁
       },
     },
     watch: {
-      id: "fetchDetails", // 當 ID 改變時重新加載資料
-    },
-    mounted() {
-      this.fetchDetails();
-    },
+      // 監控 ID 更新，重新發送請求
+      '$route.params.id': function(newId) {
+        console.log("路由 ID 更新為:", newId);
+        this.fetchRestaurantDetails(newId);  // 重新發送請求
+      }
+    }
   };
 </script>
 
-
-<style scoped>
-.store-details {
-    padding: 20px;
-    font-family: Arial, sans-serif;
-  }
-  
-  .back-button {
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    cursor: pointer;
-    border-radius: 5px;
-  }
-  
-  .back-button:hover {
-    background-color: #0056b3;
-  }
-  
-  .comment-list {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .comment-item {
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-  }
-  
-  .comment-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .like-button {
-    background-color: #28a745;
-    color: #fff;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 5px;
-  }
-  
-  .like-button:hover {
-    background-color: #218838;
-  }
-</style>  
