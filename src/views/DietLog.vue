@@ -5,7 +5,10 @@
       <input type="date" v-model="currentDate" @change="loadCurrentDateRecords()" />
       <h2>{{ currentDate }}</h2>
       <div class="calories">
-        <p>已攝取：{{ totalCalories }} / {{ dailyGoal }} 卡路里</p>
+        <h3>營養攝取概覽</h3>
+        <div v-for="(nutrient, index) in nutrients" :key="index">
+          <p>{{ nutrient.label }}: {{ nutrient.current }}g / {{ nutrient.recommended }}g</p>
+        </div>
       </div>
     </header>
 
@@ -24,7 +27,7 @@
     <h3>已添加食物:</h3>
     <ul>
       <li v-for="food in getCurrentDateFoods()" :key="food.name">
-        {{ food.name }} - {{ food.calories }} 卡路里 (類別: {{ food.category }})
+        {{ food.name }} - 碳水: {{ food.carbs }}g，蛋白質: {{ food.protein }}g，脂肪: {{ food.fat }}g，熱量: {{ food.calories }} kcal
       </li>
     </ul>
 
@@ -45,7 +48,16 @@
             </option>
           </select>
 
-          <label for="foodCalories">卡路里:</label>
+          <label for="foodCarbs">碳水化合物 (g):</label>
+          <input type="number" id="foodCarbs" v-model.number="newFood.carbs" required />
+
+          <label for="foodProtein">蛋白質 (g):</label>
+          <input type="number" id="foodProtein" v-model.number="newFood.protein" required />
+
+          <label for="foodFat">脂肪 (g):</label>
+          <input type="number" id="foodFat" v-model.number="newFood.fat" required />
+
+          <label for="foodCalories">熱量 (kcal):</label>
           <input type="number" id="foodCalories" v-model.number="newFood.calories" required />
 
           <button type="submit">添加</button>
@@ -79,6 +91,12 @@
       records: {}, 
       totalCalories: 0, 
       dailyGoal: 2000, 
+      nutrients: [
+        { label: "碳水化合物", key: "carbs", current: 0, recommended: 300 },
+        { label: "蛋白質", key: "protein", current: 0, recommended: 75 },
+        { label: "脂肪", key: "fat", current: 0, recommended: 70 },
+        { label: "熱量", key: "calories", current: 0, recommended: 2000 }
+      ],
       foodLog: {},
 
       foodCategories: [
@@ -155,6 +173,9 @@
       newFood: {
         name: '',
         category: '',
+        carbs: 0,
+        protein: 0,
+        fat: 0,
         calories: 0
       }
     };
@@ -163,24 +184,22 @@
     loadCurrentDateRecords() {
       const recordsForDate = this.records[this.currentDate];
       if (recordsForDate) {
-        this.totalCalories = recordsForDate.totalCalories;
-        recordsForDate.categories.forEach(cat => {
-          const category = this.foodCategories.find(c => c.label === cat.label);
-          if (category) {
-            category.current = cat.current;
-          }
+        this.nutrients.forEach(nutrient => {
+          nutrient.current = recordsForDate.nutrients[nutrient.key] || 0;
         });
+        if (category) {
+            category.current = cat.current;
+        }
       } else {
-        this.totalCalories = 0;
+        this.resetNutrients();
         this.foodCategories.forEach(cat => {
           cat.current = 0;
         });
       }
     },
-    // 獲取當前日期的食物
     getCurrentDateFoods() {
       const recordsForDate = this.records[this.currentDate];
-      return recordsForDate ? recordsForDate.foods : []; // 直接返回當前日期的食物
+      return recordsForDate ? recordsForDate.foods : [];
     },
     openAddFoodModal() {
       this.showAddFoodModal = true;
@@ -191,21 +210,28 @@
     },
     addFood() {
       const category = this.foodCategories.find(cat => cat.label === this.newFood.category);
-      if (category) {
+      if (category){
         category.current++;
-        this.totalCalories += this.newFood.calories; // 更新總卡路里
-        
-        // 更新紀錄
         if (!this.records[this.currentDate]) {
           this.records[this.currentDate] = {
-            totalCalories: 0,
-            categories: this.foodCategories.map(cat => ({ label: cat.label, current: 0 })),
-            foods: [] // 確保有一個 foods 陣列來存儲食物
+            nutrients: {},
+            foods: []
           };
         }
-        
-        this.records[this.currentDate].totalCalories += this.newFood.calories;
-        this.records[this.currentDate].foods.push({ ...this.newFood }); // 將新食物添加到當前日期的 foods 陣列中
+
+        const recordsForDate = this.records[this.currentDate];
+        recordsForDate.foods.push({ ...this.newFood });
+
+        // 更新每項營養素
+        this.nutrients.forEach(nutrient => {
+          const key = nutrient.key;
+          if (!recordsForDate.nutrients[key]) {
+            recordsForDate.nutrients[key] = 0;
+          }
+          recordsForDate.nutrients[key] += this.newFood[key];
+        });
+
+        this.loadCurrentDateRecords();
       }
       this.closeAddFoodModal();
     },
@@ -213,15 +239,24 @@
       this.newFood = {
         name: '',
         category: '',
+        carbs: 0,
+        protein: 0,
+        fat: 0,
         calories: 0
       };
     },
-    showDetails(category) {
-      this.selectedCategory = category;
+    resetNutrients() {
+      this.nutrients.forEach(nutrient => {
+        nutrient.current = 0;
+      });
+    },
+    showDetails(food) {
+      this.selectedCategory = food;
       this.showModal = true;
     },
     closeModal() {
       this.showModal = false;
+      this.selectedFood = {};
     }
   },
 

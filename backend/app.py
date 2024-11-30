@@ -12,6 +12,7 @@ from sqlalchemy import and_
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import Unauthorized
 import traceback
+from sqlalchemy import func
 
 
 app = Flask(__name__)
@@ -181,65 +182,55 @@ with app.app_context():
 # 獲取地區 API
 @app.route('/maincat', methods=['GET'])
 def get_main_categories():
-    try:
-        maincats = MainCategory.query.all()
-        return jsonify([{'id': maincat.id, 'name': maincat.name} for maincat in maincats])
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    maincats = MainCategory.query.all()
+    return jsonify([{'id': maincat.id, 'name': maincat.name} for maincat in maincats])
+
 
 # 查詢 Subcat API
 @app.route('/subcat/<int:maincat_id>', methods=['GET'])
 def get_subcats(maincat_id):
-    try:
-        subcats = Subcat.query.filter_by(maincat_id=maincat_id).all()
-        if subcats:
-            return jsonify([{'id': subcat.id, 'name': subcat.name, 'address': subcat.address} for subcat in subcats])
-        else:
-            return jsonify({"message": "未找到相關的餐廳區域"}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    subcats = Subcat.query.filter_by(maincat_id=maincat_id).all()
+    if subcats:
+        return jsonify([{'id': subcat.id, 'name': subcat.name, 'address': subcat.address} for subcat in subcats])
+    else:
+        return jsonify({"message": "未找到相關的餐廳區域"}), 404
+
 
 # 根據 Subcat 名稱查詢菜單
 @app.route('/menu/<string:subcat_name>', methods=['GET'])
 def get_menu(subcat_name):
-    try:
-        subcat = Subcat.query.filter_by(name=subcat_name).first()
-        if subcat:
-            foods = Food.query.filter_by(subcat_id=subcat.id).all()
-            menu = [{
-                "id": food.id,
-                "name": food.name,
-                "price": food.price,
-                "carbo": food.carbo,
-                "protein": food.protein,
-                "fat": food.fat,
-                "calories": food.calories,
-                "score": food.score,
-                "img_url": food.img_url  # 圖片 URL
-            } for food in foods]
-            return jsonify(menu)
-        else:
-            return jsonify({"message": "餐廳區域不存在"}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    subcat = Subcat.query.filter_by(name=subcat_name).first()
+    if subcat:
+        foods = Food.query.filter_by(subcat_id=subcat.id).all()
+        menu = [{
+            "id": food.id,
+            "name": food.name,
+            "price": food.price,
+            "carbo": food.carbo,
+            "protein": food.protein,
+            "fat": food.fat,
+            "calories": food.calories,
+            "score": food.score,
+            "img_url": food.img_url  # 圖片 URL
+        } for food in foods]
+        return jsonify(menu)
+    else:
+        return jsonify({"message": "餐廳區域不存在"}), 404
     
 # 獲取餐廳詳細資料的路由（GET /subcat/{id}）：
 @app.route('/api/subcat/<int:id>', methods=['GET'])
 def get_store_details(id):
-    try:
-        subcat = Subcat.query.get(id)  # 根據 subcat_id 獲取餐廳詳細資料
-        if subcat:
-            store_data = {
-                "id": subcat.id,
-                "name": subcat.name,
-                "address": subcat.address,
-                "type": subcat.type
-            }
-            return jsonify(store_data), 200
-        else:
-            return jsonify({"message": "餐廳不存在"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    subcat = Subcat.query.get(id)  # 根據 subcat_id 獲取餐廳詳細資料
+    if subcat:
+        store_data = {
+            "id": subcat.id,
+            "name": subcat.name,
+            "address": subcat.address,
+            "type": subcat.type
+        }
+        return jsonify(store_data), 200
+    else:
+        return jsonify({"message": "餐廳不存在"}), 404
 
 
 # 建立 API 路由來取得優惠資料
@@ -269,13 +260,9 @@ def register():
     new_user = User(username=username, email=email)
     new_user.set_password(password)
 
-    try:
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({'message': '註冊成功'}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'message': '註冊失敗', 'error': str(e)}), 500
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': '註冊成功'}), 201
 
 
 #登入(更新)
@@ -347,93 +334,83 @@ def invalid_token_callback(error):
 def missing_token_callback(error):
     return jsonify({"msg": "請提供有效的 token"}), 401
 
-# #結帳
-# @app.route('/checkout', methods=['GET', 'POST'])
-# def checkout():
-#     # 處理 checkout 的邏輯
-#     return jsonify({"message": "Checkout Page"})
-
 
 #食物分類
 @app.route('/foods', methods=['GET'])
 def get_foods():
-    try:
-        # 獲取多個 nutrient 和 level 參數
-        nutrients = request.args.getlist('nutrient')
-        levels = request.args.getlist('level')
+    # 獲取多個 nutrient 和 level 參數
+    nutrients = request.args.getlist('nutrient')
+    levels = request.args.getlist('level')
 
-        app.logger.debug(f'Nutrients: {nutrients}, Levels: {levels}')  # 日誌輸出
+    app.logger.debug(f'Nutrients: {nutrients}, Levels: {levels}')  # 日誌輸出
 
-        # 檢查參數數量是否匹配
-        if len(nutrients) != len(levels):
-            return jsonify({"error": "營養素和等級參數數量不匹配"}), 400
+    # 檢查參數數量是否匹配
+    if len(nutrients) != len(levels):
+        return jsonify({"error": "營養素和等級參數數量不匹配"}), 400
 
-        # 檢查 nutrient 和 level 是否為有效值
-        valid_nutrients = ['protein', 'calories', 'fat', 'carbo']
-        valid_levels = ['high', 'low']
+    # 檢查 nutrient 和 level 是否為有效值
+    valid_nutrients = ['protein', 'calories', 'fat', 'carbo']
+    valid_levels = ['high', 'low']
 
-        filters = []
-        for nutrient, level in zip(nutrients, levels):
-            app.logger.debug(f'Nutrient: {nutrient}, Level: {level}')  # 日誌輸出
+    filters = []
+    for nutrient, level in zip(nutrients, levels):
+        app.logger.debug(f'Nutrient: {nutrient}, Level: {level}')  # 日誌輸出
 
-            if nutrient not in valid_nutrients or level not in valid_levels:
-                return jsonify({"error": f"無效的參數: {nutrient}, {level}"}), 400
+        if nutrient not in valid_nutrients or level not in valid_levels:
+            return jsonify({"error": f"無效的參數: {nutrient}, {level}"}), 400
 
-            if level == 'high':
-                if nutrient == 'protein':
-                    filters.append(Food.protein > 20)  # 高蛋白質
-                elif nutrient == 'calories':
-                    filters.append(Food.calories > 400)  # 高熱量
-                elif nutrient == 'fat':
-                    filters.append(Food.fat > 20)  # 高脂肪
-                elif nutrient == 'carbo':
-                    filters.append(Food.carbo > 50)  # 高糖
-            elif level == 'low':
-                if nutrient == 'protein':
-                    filters.append(Food.protein <= 20)  # 低蛋白質
-                elif nutrient == 'calories':
-                    filters.append(Food.calories <= 400)  # 低熱量
-                elif nutrient == 'fat':
-                    filters.append(Food.fat <= 20)  # 低脂肪
-                elif nutrient == 'carbo':
-                    filters.append(Food.carbo <= 50)  # 低糖
+        if level == 'high':
+            if nutrient == 'protein':
+                filters.append(Food.protein > 20)  # 高蛋白質
+            elif nutrient == 'calories':
+                filters.append(Food.calories > 400)  # 高熱量
+            elif nutrient == 'fat':
+                filters.append(Food.fat > 20)  # 高脂肪
+            elif nutrient == 'carbo':
+                filters.append(Food.carbo > 50)  # 高糖
+        elif level == 'low':
+            if nutrient == 'protein':
+                filters.append(Food.protein <= 20)  # 低蛋白質
+            elif nutrient == 'calories':
+                filters.append(Food.calories <= 400)  # 低熱量
+            elif nutrient == 'fat':
+                filters.append(Food.fat <= 20)  # 低脂肪
+            elif nutrient == 'carbo':
+                filters.append(Food.carbo <= 50)  # 低糖
 
-        # 將所有條件結合起來
-        if filters:
-            query = Food.query.filter(and_(*filters))
-        else:
-            query = Food.query
+    # 將所有條件結合起來
+    if filters:
+        query = Food.query.filter(and_(*filters))
+    else:
+        query = Food.query
 
-        # 執行查詢
-        results = query.all()
+    # 執行查詢
+    results = query.all()
 
-        # 檢查結果是否為空
-        if not results:
-            return jsonify({"message": "沒有符合條件的食物"}), 200
+    # 檢查結果是否為空
+    if not results:
+        return jsonify({"message": "沒有符合條件的食物"}), 200
 
-        # 構建返回的結果列表，包含餐廳名稱
-        food_list = []
-        for food in results:
-            # 查詢與該 food 相關的餐廳
-            restaurant = Subcat.query.filter_by(id=food.subcat_id).first()
+    # 構建返回的結果列表，包含餐廳名稱
+    food_list = []
+    for food in results:
+        # 查詢與該 food 相關的餐廳
+        restaurant = Subcat.query.filter_by(id=food.subcat_id).first()
 
-            food_data = {
-                'id': food.id,
-                'name': food.name,
-                'protein': food.protein,
-                'calories': food.calories,
-                'fat': food.fat,
-                'carbo': food.carbo,
-                'score': food.score,
-                'restaurant_name': restaurant.name if restaurant else '未知餐廳'
-            }
-            food_list.append(food_data)
+        food_data = {
+            'id': food.id,
+            'name': food.name,
+            'protein': food.protein,
+            'calories': food.calories,
+            'fat': food.fat,
+            'carbo': food.carbo,
+            'score': food.score,
+            'restaurant_name': restaurant.name if restaurant else '未知餐廳'
+        }
+        food_list.append(food_data)
 
-        return jsonify(food_list), 200
+    return jsonify(food_list), 200
 
-    except Exception as e:
-        app.logger.error(f'Error in get_foods: {str(e)}')
-        return jsonify({"error": "內部伺服器錯誤"}), 500
     
 # 查詢每家餐廳的平均評分並排序
 @app.route('/api/top-restaurants', methods=['GET'])
@@ -469,27 +446,26 @@ def get_top_restaurants():
 # 獲取評論資料的路由
 @app.route('/api/comments/<int:subcat_id>', methods=['GET'])
 def get_comments_by_store(subcat_id):
-    try:
-        subcat = Subcat.query.get(subcat_id)
-        if subcat:
-            # 根據 subcat 查找所有食物，並且查找這些食物的評論
-            foods = Food.query.filter_by(subcat_id=subcat_id).all()
-            all_comments = []
-            for food in foods:
-                # 獲取每個食物的評論
-                comments = Comment.query.filter_by(food_id=food.id).all()
-                for comment in comments:
-                    all_comments.append({
-                        "user": comment.user,
-                        "data": comment.data,
-                        "likes": comment.likes,
-                        "replies": comment.replies
-                    })
-            return jsonify(all_comments), 200
-        else:
-            return jsonify({"message": "餐廳區域不存在"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
+    subcat = Subcat.query.get(subcat_id)
+    if subcat:
+        # 根據 subcat 查找所有食物，並且查找這些食物的評論
+        foods = Food.query.filter_by(subcat_id=subcat_id).all()
+        all_comments = []
+        for food in foods:
+            # 獲取每個食物的評論
+            comments = Comment.query.filter_by(food_id=food.id).all()
+            for comment in comments:
+                all_comments.append({
+                    "user": comment.user,
+                    "data": comment.data,
+                    "likes": comment.likes,
+                    "replies": comment.replies
+                })
+        return jsonify(all_comments), 200
+    else:
+        return jsonify({"message": "餐廳區域不存在"}), 404
+
 
 
 @app.route('/api/comments/<int:food_id>', methods=['GET'])
@@ -503,20 +479,19 @@ def get_comments(food_id):
 # 點讚功能的路由
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
 def like_comment(comment_id):
-    try:
-        # 查找該評論
-        comment = Comment.query.get(comment_id)
-        if comment:
-            # 增加點讚數
-            comment.likes += 1
-            db.session.commit()
-            return jsonify({"message": "點讚成功", "likes": comment.likes}), 200
-        else:
-            return jsonify({"message": "評論不存在"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # 查找該評論
+    comment = Comment.query.get(comment_id)
+    if comment:
+        # 增加點讚數
+        comment.likes += 1
+        db.session.commit()
+        return jsonify({"message": "點讚成功", "likes": comment.likes}), 200
+    else:
+        return jsonify({"message": "評論不存在"}), 404
 
 
+
+#保存訂單紀錄
 @app.route('/checkout', methods=['POST'])
 @jwt_required()  # 用戶可選擇是否提供 JWT
 def checkout():
@@ -553,8 +528,7 @@ def checkout():
     # 若未登入，僅返回成功訊息，不儲存至歷史記錄
     return jsonify({"message": "結帳成功（訪客身份，未儲存訂單）"}), 200
 
-    #########################################################
-#顯示歷史訂單(更新)############################################################
+#顯示歷史訂單
 @app.route('/history', methods=['GET','POST'])
 @jwt_required()  # 用戶必須登入
 def get_history():
@@ -607,17 +581,17 @@ def get_history():
             total_fat += food.fat
             total_calories += food.calories
 
-            history.append({
-                "timestamp": record.timestamp.isoformat(),
-                "food_name": food.name,
-                "restaurant_name": food.subcat.name,
-                "price": food.price,
-                "carbo": food.carbo,
-                "protein": food.protein,
-                "fat": food.fat,
-                "calories": food.calories,
-                "img_url": food.img_url  # 包含圖片 URL
-            })
+        history.append({
+            "timestamp": record.timestamp,
+            "food_name": food.name,
+            "restaurant_name": food.subcat.name,
+            "price": food.price,
+            "carbo": food.carbo,
+            "protein": food.protein,
+            "fat": food.fat,
+            "calories": food.calories,
+            "img_url": food.img_url  # 包含圖片 URL
+        })
 
     return jsonify({
         "history": history,
@@ -629,7 +603,6 @@ def get_history():
         }
     }), 200
 
-################################################################################
     
 if __name__ == '__main__':
     with app.app_context():

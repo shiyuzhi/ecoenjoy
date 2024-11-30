@@ -1,9 +1,10 @@
 <template>
-  <div class="root">
+  <div id="app" class="root">
     <div class="sidebar" :class="{ active: sidebarActive }">
       <div class="user-info">
         <div class="user-icon">⛄</div>
         <div class="username">
+          <!-- <span v-if="user">{{ user.username }}</span> -->
           <a href="#" v-if="user" @click="handleUsernameClick">{{ user.username }}</a>
           <span v-else>訪客</span> 
         </div>
@@ -168,17 +169,30 @@
         sidebarActive.value = !sidebarActive.value;
       };
 
-      // 獲取用戶資料
-      const getUserData = () => {
-        const storedUsername = sessionStorage.getItem('username');
-        user.value = storedUsername ? { username: storedUsername } : null;
+      // 獲取當前用戶資訊####################################################
+      const fetchUser = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) return;
+
+          const response = await axios.get('http://127.0.0.1:5000/user', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          user.value = response.data.user;
+        } catch (error) {
+          console.error('獲取用戶資訊失敗：', error);
+          localStorage.removeItem('token');
+        }
       };
+      //######################################################################
 
       // 登出處理
       const handleSignOutClick = async () => {
         if (confirm("確定要登出嗎？")) {
           try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             if (!token) {
               alert('未找到有效的 Token');
               return;
@@ -190,8 +204,8 @@
 
             if (response.status === 200) {
               user.value = null; 
-              sessionStorage.removeItem('token');
-              sessionStorage.removeItem('username');
+              localStorage.removeItem('token');
+              localStorage.removeItem('username');
               getUserData();
               router.push('/login');
             }
@@ -264,7 +278,7 @@
       onMounted(() => {
         get_all_maincat();
         get_all_offers();
-        getUserData();
+        fetchUser();
         loadTopRestaurants();  // 正確加載餐廳資料
       });
 
@@ -542,6 +556,16 @@ p {
   margin: 0;
   text-align: right;
 } 
+
+.logo-container {
+  text-align: center; 
+}
+
+.logo {
+  width: 100px; 
+  height: auto; 
+}
+
 
 .logo-container {
   text-align: center; 

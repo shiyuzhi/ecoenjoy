@@ -71,6 +71,12 @@
             this.username = response.data.user.username;
             this.email = response.data.user.email;
 
+            // 調用 App.vue 的 fetchUser 方法來更新用戶數據
+            if (this.$root.fetchUser) {
+              await this.$root.fetchUser();
+            }
+            console.log('fetchUser:', this.$root.fetchUser);
+
             setTimeout(() => {
               this.$router.push("/"); // 導向主頁或其他頁面
             }, 2000);
