@@ -92,6 +92,7 @@ class Subcat(db.Model):
     maincat_id = db.Column(db.Integer, db.ForeignKey("maincat.id"), nullable=False)
     maincat = db.relationship("MainCategory", back_populates="subcats")  
     foods = db.relationship("Food", back_populates="subcat")  # 反向關聯
+    img_url = db.Column(db.String(255), nullable=True)  # 新增 img_url 欄位
 # 定義食物的資料庫模型
 class Food(db.Model):
     __tablename__ = 'foods' 
@@ -107,18 +108,24 @@ class Food(db.Model):
     subcat = db.relationship("Subcat", back_populates="foods")  # 反向關聯
     img_url = db.Column(db.String(255), nullable=True)  
 
+# 修改 Comment 表
 class Comment(db.Model):
     __tablename__ = 'comment'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user = db.Column(db.String(80), nullable=False)        # 用戶名稱
-    data = db.Column(db.String(200), nullable=False)       # 評論內容
+    data = db.Column(db.String(200), nullable=False)  # 評論內容
     likes = db.Column(db.Integer, nullable=False, default=0)  # 點讚數
     replies = db.Column(db.Integer, nullable=False, default=0)  # 回覆數
     food_id = db.Column(db.Integer, db.ForeignKey('foods.id'), nullable=False)  # 外鍵，關聯到Food表
     parent_comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # 回覆父評論ID (可為空)
+    
+    # 新增 user_id 外鍵，與 User 表關聯
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # 外鍵，關聯到 User 表
 
-    food = db.relationship('Food', backref=db.backref('comments', lazy=True))  # 關聯到Food表，取得該食物所有評論
+    food = db.relationship('Food', backref=db.backref('comments', lazy=True))  # 關聯到 Food 表，取得該食物所有評論
     parent_comment = db.relationship('Comment', remote_side=[id])  # 回覆的父評論
+    user = db.relationship('User', backref=db.backref('comments', lazy=True))  # 關聯到 User 表，取得該用戶所有評論
+
+
 
 
 #歷史訂單
@@ -462,7 +469,8 @@ def get_store_details_by_id(id):
                 "id": subcat.id,
                 "name": subcat.name,
                 "address": subcat.address,
-                "type": subcat.type
+                "type": subcat.type,
+                "img_url": subcat.img_url  # 加入 img_url 屬性
             }
             print(f"找到的餐廳資料: {store_data}")  # 顯示查詢結果
             return jsonify(store_data), 200
@@ -476,47 +484,78 @@ def get_store_details_by_id(id):
 
 
 # 評論
-@app.route('/api/comments/<int:subcat_id>', methods=['GET'])
-def get_comments_by_store(subcat_id):
-    try:
-        if subcat_id is None:
-            return jsonify({"error": "未提供有效的 subcat_id"}), 400
-        
-        subcat = Subcat.query.get(subcat_id)
-        if not subcat:
-            return jsonify({"message": "餐廳區域不存在"}), 404
-        
-        foods = Food.query.filter_by(subcat_id=subcat_id).all()
-        all_comments = [
-            {
-                "user": comment.user,
-                "data": comment.data,
-                "likes": comment.likes,
-                "replies": comment.replies
-            }
-            for food in foods
-            for comment in Comment.query.filter_by(food_id=food.id).all()
-        ]
-        return jsonify(all_comments), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app.route('/api/comments/store/<int:food_id>', methods=['GET'])
+def get_comments_by_store(food_id):
+    comments = Comment.query.filter_by(food_id=food_id).all()
+    if not comments:
+        return jsonify({'message': 'No comments found for this store.'}), 404
+    
+    result = []
+    for comment in comments:
+        result.append({
+            'id': comment.id,
+            'user': comment.user,
+            'data': comment.data,
+            'likes': comment.likes,
+            'replies': comment.replies,
+            'food_id': comment.food_id,
+            'parent_comment_id': comment.parent_comment_id
+        })
 
+    return jsonify(result)
 
-# 點讚功能的路由
+# 點讚
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
-def like_comment(comment_id):
-    try:
-        # 查找該評論
-        comment = Comment.query.get(comment_id)
-        if comment:
-            # 增加點讚數
-            comment.likes += 1
-            db.session.commit()
-            return jsonify({"message": "點讚成功", "likes": comment.likes}), 200
-        else:
-            return jsonify({"message": "評論不存在"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@jwt_required()
+def like_comment(current_user, comment_id):
+    comment = Comment.query.filter_by(id=comment_id).first()
+    if not comment:
+        return jsonify({'message': 'Comment not found!'}), 404
+    
+    comment.likes += 1
+    db.session.commit()
+
+    return jsonify({'message': 'Liked successfully', 'likes': comment.likes}), 200
+
+# 回覆評論
+@app.route('/api/comments/reply/<int:parent_comment_id>', methods=['POST'])
+@jwt_required()
+def reply_to_comment(current_user, parent_comment_id):
+    parent_comment = Comment.query.filter_by(id=parent_comment_id).first()
+    if not parent_comment:
+        return jsonify({'message': 'Parent comment not found!'}), 404
+    
+    data = request.get_json()
+    reply = Comment(
+        user=current_user.username,
+        data=data['reply'],
+        food_id=parent_comment.food_id,
+        parent_comment_id=parent_comment.id
+    )
+    db.session.add(reply)
+    db.session.commit()
+
+    parent_comment.replies += 1  # 更新父評論的回覆數
+    db.session.commit()
+
+    return jsonify({'message': 'Reply posted successfully'}), 200
+
+#編輯評論  用戶可以編輯自己的評論，但只能編輯自己發表的評論。
+@app.route('/api/comments/<int:comment_id>', methods=['PUT'])
+@jwt_required
+def edit_comment(current_user, comment_id):
+    comment = Comment.query.filter_by(id=comment_id).first()
+    if not comment:
+        return jsonify({'message': 'Comment not found!'}), 404
+
+    if comment.user != current_user.username:
+        return jsonify({'message': 'You can only edit your own comments.'}), 403
+
+    data = request.get_json()
+    comment.data = data['data']  # 更新評論內容
+    db.session.commit()
+
+    return jsonify({'message': 'Comment updated successfully'}), 200
 
 
 @app.route('/checkout', methods=['POST'])

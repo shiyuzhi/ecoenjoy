@@ -1,11 +1,17 @@
 <template>
-  <div class="store-details">
-    <button @click="goBack" class="back-button">返回</button>
-    <h2>{{ restaurant ? restaurant.name : '餐廳名稱' }}</h2>
-    <p>{{ restaurant ? restaurant.address : '餐廳地址' }}</p>
-    <p>{{ restaurant ? restaurant.type : '餐廳類型' }}</p>
-  </div>
+    <div class="store-details">
+      <button @click="goBack" class="back-button">返回</button>
+      <hr />
+      <div class="image-container">
+        <img v-if="restaurant && restaurant.img_url" :src="`/store/${restaurant.img_url}`" :alt="restaurant.name" class="restaurant-image" />
+      </div>
+      <h2>{{ restaurant ? restaurant.name : '餐廳名稱' }}</h2>
+      <p>{{ restaurant ? restaurant.address : '餐廳地址' }}</p>
+      <p>{{ restaurant ? restaurant.type : '餐廳類型' }}</p>
+    </div>
 </template>
+
+    
 
 <script>
   import axios from 'axios';
@@ -58,4 +64,3 @@
     }
   };
 </script>
-
