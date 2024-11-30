@@ -54,10 +54,13 @@
       <div class="content">
         <router-view></router-view>
 
-        <H3>餐廳推薦</H3>
+        <H2>餐廳推薦</H2>
         <div class="restaurant-list">
           <!-- 列出每家餐廳 -->
           <div class="restaurant-item" v-for="restaurant in restaurants" :key="restaurant.id">
+            <div class="image-container">
+              <img v-if="restaurant && restaurant.img_url" :src="`/store/${restaurant.img_url}`" :alt="restaurant.name" class="restaurant-image" />
+            </div>
             <h3>{{ restaurant.name }}</h3>
             <p>{{ restaurant.address }}</p>
             <div class="rating">
@@ -309,7 +312,7 @@
 }
 
 .sidebar {
-  width: 250px; /* 固定寬度 */
+  width: 300px; 
   background-color: #8CAE68;
   color: white;
   display: flex;
@@ -397,55 +400,111 @@ header {
   font-size: 16px;
 }
 
+.section-title {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 20px 0;
+  color: #333;
+  border-bottom: 2px solid #f2f2f2;
+  padding-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+
 .restaurant-list {
   display: flex;
-  overflow-x: scroll ;
-  gap: 10px;
-  padding: 20px;
+  overflow-x: auto; 
+  gap: 30px; 
+  padding: 0 20px;
+  scrollbar-width: thin; 
+}
+
+.restaurant-list::-webkit-scrollbar {
+  height: 8px; 
+}
+
+.restaurant-list::-webkit-scrollbar-thumb {
+  background-color: #442727; /* 滾動條的顏色 */
+  border-radius: 10px;
 }
 
 .restaurant-item {
-  width: 500px; 
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 10px;
   display: flex;
-  flex-direction: column; 
-  justify-content: space-between; 
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 15px;
+  width: 350px;  /* 增加每個餐廳的寬度 */
+  flex-shrink: 0;  
 }
 
-.restaurant-item h3 {
-  font-size: 20px;
+.restaurant-item:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }
 
-.restaurant-item p {
-  margin: 5px 0;
+/* 圖片容器 */
+.image-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 10px;
+  margin-bottom: 15px;
 }
 
-.restaurant-item ul {
-  list-style-type: none;
-  padding-left: 10px;
+.restaurant-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 10px;
+  transition: transform 0.3s ease;
 }
 
-.restaurant-item li {
-  margin-bottom: 10px;
+.restaurant-item:hover .restaurant-image {
+  transform: scale(1.05);
+}
+
+/* 餐廳資訊 */
+.restaurant-info {
+  text-align: center;
+}
+
+.restaurant-name {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.restaurant-address {
+  font-size: 1rem;
+  color: #777;
+  margin-bottom: 12px;
 }
 
 .rating {
   display: flex;
-  align-items: center; 
-  margin-top: 30px;  
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
 }
 
 .star {
-  font-size: 15px;
-  margin-right: 5px;  /* 星星之間有間距 */
+  color: #ffb400;
+  font-size: 1.2rem;
 }
 
-.restaurant-item .avg-rating {
-  font-size: 14px;
-  font-weight: bold;
+.avg-rating {
+  font-size: 1rem;
+  color: #444;
 }
+
 
 .latest-offers {
   margin-top: 20px;

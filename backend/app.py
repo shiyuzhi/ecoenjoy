@@ -14,9 +14,12 @@ from werkzeug.exceptions import Unauthorized
 import traceback
 from sqlalchemy import func
 from urllib.parse import unquote
+from urllib.parse import quote
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='public')
+
+
 CORS(app)  # 允許所有來源的請求
 # 配置 CORS，允許來自前端的跨域請求並支持攜帶憑證（如 cookies）
 CORS(app, supports_credentials=True, origins=["http://localhost:5173/"])
@@ -428,35 +431,34 @@ def get_foods():
         return jsonify({"error": "內部伺服器錯誤"}), 500
     
 # 查詢每家餐廳的平均評分並排序
+from urllib.parse import quote
+
 @app.route('/api/top-restaurants', methods=['GET'])
 def get_top_restaurants():
-   
     top_restaurants = db.session.query(
         Subcat.id,
         Subcat.name,
         Subcat.address,
+        Subcat.img_url,
         func.avg(Food.score).label('avg_score')
-    ).join(Food, Subcat.id == Food.subcat_id)  # 連接餐廳與菜品
-    
-    # 此處不需要反斜線，直接將每個方法放在單獨一行
-    top_restaurants = top_restaurants.group_by(Subcat.id) \
-                                     .order_by(func.avg(Food.score).desc()) \
-                                     .limit(5).all()
+    ).join(Food, Subcat.id == Food.subcat_id) \
+     .group_by(Subcat.id) \
+     .order_by(func.avg(Food.score).desc()) \
+     .limit(5).all()
 
-    # 組織回傳資料
     restaurants = []
     for restaurant in top_restaurants:
-        # 查詢餐廳的菜品
-        foods = db.session.query(Food.name, Food.score).filter(Food.subcat_id == restaurant.id).all()
         restaurant_data = {
+            'id': restaurant.id,
             'name': restaurant.name,
             'address': restaurant.address,
             'avg_score': round(restaurant.avg_score, 2),
-            'foods': [{'name': food.name, 'score': food.score} for food in foods]
+            'img_url': restaurant.img_url,  # 返回圖片檔名
         }
         restaurants.append(restaurant_data)
 
-    return jsonify(restaurants)  # 返回 JSON 格式的資料
+    return jsonify(restaurants)
+
 
 # 獲取餐廳詳細資料的路由
 @app.route('/api/subcat/id/<int:id>', methods=['GET'])

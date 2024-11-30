@@ -17,7 +17,8 @@ Content-Type: application/json
 #測試獲取token
 ### 受保護的數據請求
 
-GET  http://127.0.0.1:5000/api/comments/store/6
+GET  http://127.0.0.1:5000/static/store/01ALOA%20POKE%20夏威夷拌飯.png
+
 
 ### 獲取用戶資料
  http://localhost:5000/user
