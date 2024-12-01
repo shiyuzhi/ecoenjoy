@@ -302,7 +302,9 @@
 </script>
 
 
+
 <style scoped>
+  /* General styling */
   :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
@@ -314,7 +316,7 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
-
+  
   @media (prefers-color-scheme: light) {
     :root {
       color: #213547;
@@ -322,12 +324,18 @@
     }
   }
   
-  .root {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
+  body, html {
+    height: 100%;
+    margin: 0;
+    overflow: auto; 
   }
   
+  .root {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    flex-direction: column; 
+  }
   
   .menu-icon {
     font-size: 24px;
@@ -337,14 +345,14 @@
     top: 0;
     left: 0;
     padding: 10px;
-    background-color: #8CAE68;
+    background-color: #8cae68;
     color: white;
     transition: transform 0.2s ease;
   }
-   
+  
   .sidebar {
-    width: 350px; 
-    background-color: #8CAE68;
+    width: 400px;
+    background-color: #8cae68;
     color: white;
     display: flex;
     flex-direction: column;
@@ -352,136 +360,117 @@
     position: fixed;
     height: 100%;
     top: 0;
-    left: -400px; 
+    left: -400px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
-
-
+  
   .sidebar.active {
-    left: 0; 
+    left: 0;
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
   }
-
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%; 
-    left: -100%; 
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 100%;
+      left: -100%;
+    }
+  
+    .sidebar.active {
+      left: 0;
+    }
   }
-
-  .sidebar.active {
-    left: 0; /* 側邊欄顯示 */
-  }
-}
+  
   .menu-icon:hover {
     transform: rotate(90deg);
   }
-
+  
   .user-info {
     display: flex;
     align-items: center;
     flex-direction: column;
     margin-top: 60px;
-    transition: transform 0.3s ease;
   }
-
+  
   .user-info:hover {
     transform: translateY(-5px);
   }
-
+  
   .user-icon {
     font-size: 50px;
   }
-
+  
   .username {
     margin-top: 10px;
   }
-
+  
   .username a {
     color: white;
     text-decoration: none;
+    font-size: 1.2rem;
   }
-
- 
+  
   nav ul {
     list-style: none;
     padding: 0;
     text-align: center;
   }
-
+  
   nav ul li {
     margin: 30px 0;
   }
-
+  
   nav ul li a {
     color: white;
     text-decoration: none;
-    font-size: 1.0rem;
-    font-weight: 600;
+    font-size: 1.4rem;
+    font-weight: 400;
     transition: color 0.3s;
   }
-
+  
   nav ul li a:hover {
     color: #0f0a03;
   }
-
+  
   .logo-container {
     text-align: center;
   }
   
   .logo {
-    width: 100px; 
-    height: auto; 
-    max-width: 100%; 
-    object-fit: contain; 
+    width: 100px;
+    height: auto;
+    max-width: 100%;
+    object-fit: contain;
   }
-
+  
   .main-content {
-    flex-grow: 1;
-    margin-left: 400px;
+    margin-left: 350px; /* Leave space for the sidebar */
     padding: 20px;
-    overflow-y: auto;
+    flex-grow: 1;
+    overflow: auto; /* Allow scrolling inside the content */
   }
-
+  
   header {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-
+  
   .location-selector select {
     font-size: 16px;
-    transition: background-color 0.3s ease;
   }
-
-  .location-selector select:hover {
-    background-color: #f0f0f0;
-  }
-
-  /* 搜尋框 */
+  
   .search-bar input {
     padding: 5px;
     font-size: 16px;
-    transition: background-color 0.3s ease;
   }
-
-  .search-bar input:focus {
-    background-color: #f0f0f0;
-    outline: none;
-  }
-
-  /* 項目標題 */
+  
   .section-title {
     font-size: 2rem;
     font-weight: 600;
     text-align: center;
     margin: 20px 0;
-    color: #333;
-    border-bottom: 2px solid #f2f2f2;
-    padding-bottom: 10px;
-    letter-spacing: 1px;
   }
-
-  /* 餐廳列表 */
+  
   .restaurant-list {
     display: flex;
     overflow-x: auto;
@@ -496,20 +485,20 @@
 
   .restaurant-list::-webkit-scrollbar-thumb {
     background-color: #442727;
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .restaurant-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #ffffff;
+    background: linear-gradient(#1eb8a6, #ffffff);
     border-radius: 15px;
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     padding: 15px;
-    width: 350px;
+    width: 300x;
     flex-shrink: 0;
   }
 
@@ -573,63 +562,14 @@
     color: #444;
   }
 
-
+  
   .latest-offers {
     margin-top: 20px;
     padding: 15px;
     background-color: #ffffff;
     border: 2px solid #d4d4d4;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.3s ease;
   }
-
-  .latest-offers:hover {
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-  }
-
-  .latest-offers h2 {
-    margin-bottom: 20px;
-    font-size: 1.6rem;
-    color: #333;
-    font-weight: 600;
-  }
-
-  .offers-list {
-    padding: 0;
-  }
-
-  .offer-item {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-  }
-
-  .offer-item:last-child {
-    border-bottom: none;
-  }
-
-  .offer-item:hover {
-    background-color: #f9f9f9;
-    transform: scale(1.02);
-  }
-
-  .offer-item a {
-    color: #333;
-    text-decoration: none;
-  }
-
-  .offer-item a:hover {
-    color: #00796b;
-  }
-
-  /* 登入與註冊按鈕 */
-  .auth-buttons {
-    display: flex;
-    color: #000000;
-  }
-
-  /* 頁腳 */
   footer {
     background-color: #1eb8a6;
     margin-top: 20px;
@@ -689,9 +629,7 @@
   margin-left: 20px; 
   text-align: right;
 }
-
-  /* 響應式設置 */
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
     .sidebar {
       width: 100%;
       position: relative;

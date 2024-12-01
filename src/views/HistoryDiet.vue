@@ -6,7 +6,7 @@
     <div class="nutrition-summary" v-if="totals">
       <h2>今日營養總和</h2>
       <p>碳水化合物：{{ totals.carbo }} g</p>
-      <p>蛋白質：{{ totals.protein }} g</p>
+      <p>蛋白質：{{ Math.round(totals.protein) }} g</p>
       <p>脂肪：{{ totals.fat }} g</p>
       <p>熱量：{{ totals.calories }} kcal</p>
     </div>
@@ -81,48 +81,78 @@ export default {
 
 
 <style scoped>
-.history-diet {
-  padding: 20px;
-}
-
-.nutrition-summary {
-  margin-bottom: 20px;
-  background: #f5f5f5;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.order-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.order-card {
-  display: flex;
-  align-items: center;
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 400px;
-  background: #fff;
-}
-
-.food-image {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-right: 15px;
-}
-
-.order-details {
-  flex: 1;
-}
-
-.order-price {
-  font-weight: bold;
-  font-size: 18px;
-}
+  .history-diet {
+    padding: 20px;
+    background-color: #e44a4a; 
+    border-radius: 10px;
+  }
+  
+  .nutrition-summary {
+    margin-bottom: 20px;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .order-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+  }
+  
+  .order-card {
+    display: flex;
+    align-items: center;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 350px;
+    background: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .order-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .food-image {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-right: 20px;
+    border: 2px solid #ddd;
+  }
+  
+  .order-details {
+    flex: 1;
+  }
+  
+  .order-price {
+    font-weight: bold;
+    font-size: 20px;  
+    color: #2c3e50;
+  }
+  
+  .order-price span {
+    font-size: 30px;  /* 增加字體大小 */
+    color: #27ae60;
+  }
+  
+  /* 增加下面部分的字體大小 */
+  .order-details p {
+    font-size: 16px;  /* 可以視情況調整 */
+    color: #333;
+  }
+  
+  .order-details p span {
+    font-size: 18px; 
+    color: #7f8c8d;
+  }
 </style>
+  
