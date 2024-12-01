@@ -328,27 +328,7 @@
     overflow: hidden;
   }
   
-  /* 側邊欄 */
-  .sidebar {
-    width: 400px;
-    background-color: #8CAE68;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: fixed;
-    height: 100%;
-    top: 0;
-    left: 0;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    transform: translateX(-100%);
-  }
-
-  .sidebar.active {
-    transform: translateX(0);
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
-  }
-
+  
   .menu-icon {
     font-size: 24px;
     margin: 20px;
@@ -361,7 +341,37 @@
     color: white;
     transition: transform 0.2s ease;
   }
+   
+  .sidebar {
+    width: 350px; 
+    background-color: #8CAE68;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: -400px; 
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
 
+
+  .sidebar.active {
+    left: 0; 
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
+  }
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%; 
+    left: -100%; 
+  }
+
+  .sidebar.active {
+    left: 0; /* 側邊欄顯示 */
+  }
+}
   .menu-icon:hover {
     transform: rotate(90deg);
   }

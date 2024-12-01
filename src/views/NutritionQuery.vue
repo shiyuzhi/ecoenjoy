@@ -178,7 +178,7 @@
   }
   
   .query-results {
-    margin-top: 20px;
+    margin-top: 15px;
   }
   
   .query-results h4 {
@@ -193,7 +193,7 @@
   }
   
   .query-results li {
-    padding: 10px;
+    padding: 20px;
     background-color: #ffffff;
     margin-bottom: 8px;
     border-radius: 8px;

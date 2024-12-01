@@ -33,29 +33,48 @@
         <span>{{ item.name }} - {{ item.quantity }} x {{ Math.round(item.price) }} 元</span>
         <button @click="removeFromCart(index)" class="remove-button">移除</button>
       </div>
-      <p class="total-price">總價: {{ totalPrice }} 元</p>
-      <!-- 付款方式選擇 -->
-      <div class="payment-method">
-        <label>
-          <input type="radio" v-model="paymentMethod" value="cash"> 現金
-        </label>
-        <label>
-          <input type="radio" v-model="paymentMethod" value="credit_card"> 信用卡
-        </label>
-      </div>
       
+      <p class="total-price">總價: {{ totalPrice }} 元</p>
+    
+      <h4>送餐資訊確認</h4>
+      <!-- 取餐人姓名 -->
+      <div class="form-group">
+        <label for="delivery-name">取餐人姓名：</label>
+        <input type="text" id="delivery-name" v-model="deliveryName" placeholder="輸入姓名" required />
+      </div>
+    
+      <!-- 外送地址 -->
+      <div class="form-group">
+        <label for="delivery-address">外送地址：</label>
+        <input type="text" id="delivery-address" v-model="deliveryAddress" placeholder="輸入外送地址" required />
+      </div>
+    
+      <!-- 電話 -->
+      <div class="form-group">
+        <label for="delivery-phone">電話：</label>
+        <input type="text" id="delivery-phone" v-model="deliveryPhone" placeholder="輸入電話" required />
+      </div>
+    
+     <!-- 付款方式選擇 -->
+    <div class="payment-method">
+      <button @click="paymentMethod = 'cash'" :class="{'active': paymentMethod === 'cash'}">現金</button>
+      <button @click="paymentMethod = 'credit_card'" :class="{'active': paymentMethod === 'credit_card'}">信用卡</button>
+    </div>
+    
       <!-- 信用卡資料 -->
-      <div v-if="paymentMethod === 'credit_card'">
+      <div v-if="paymentMethod === 'credit_card'" class="form-group">
         <label for="credit-card-number">信用卡號：</label>
         <input type="text" id="credit-card-number" v-model="creditCardNumber" placeholder="輸入信用卡號" />
         <span v-if="!isCardValid" class="error-message">信用卡號格式不正確</span>
       </div>
     
+      <!-- 結帳按鈕 -->
       <button @click="checkout" :disabled="isCheckoutDisabled" class="checkout-button">結帳</button>
     </div>
-    <p v-else>尚未添加任何商品到購物車。</p>
+        <p v-else>尚未添加任何商品到購物車。</p>
   </div>
 </template>
+
 
 <script>
   import axios from "axios";
@@ -79,18 +98,19 @@
         userId: null, // 用戶 ID (可從登入時設置)
       };
     },
+
     created() {
       // 嘗試從 localStorage 載入登入狀態
       const userToken = localStorage.getItem("token");
       const userId = localStorage.getItem("id");
-      console.log(userToken)
-      console.log(userId)
+
       if (userToken && userId) {
         this.isLoggedIn = true;
         this.token = userToken;
         this.userId = parseInt(userId);
       }
     },
+
     computed: {
       // 計算購物車的總價
       totalPrice() {
@@ -174,10 +194,17 @@
           console.error("餐廳資料無效");
         }
       },
+
       // 執行結帳操作
       async checkout() {
         if (!this.cart.length) {
           alert("購物車為空，無法結帳");
+          return;
+        }
+
+        // 檢查是否登入，未登入則跳轉至登入頁面
+        if (!this.isLoggedIn) {
+          alert("請先登入！");
           return;
         }
 
@@ -192,24 +219,19 @@
               price: item.price,
             })),
           };
-          // 如果已登入，附加用戶 ID 和 Token
-          if (this.isLoggedIn) {
-            orderData.user_id = this.userId; // 傳遞用戶 ID
-          }
-          console.log(this.isLoggedIn)
-          console.log(this.token)
+
           // 設定請求頭部（包含 Token）
           const headers = {};
           if (this.isLoggedIn && this.token) {
             headers.Authorization = `Bearer ${this.token}`;
           }
+
           // 發送 POST 請求到後端
           const response = await axios.post("http://127.0.0.1:5000/checkout", orderData, { headers });
 
           if (response.status === 200) {
             alert("結帳成功！");
-            // 清空購物車
-            this.cart = [];
+            this.cart = []; // 清空購物車
           } else {
             alert("結帳失敗：" + (response.data.error || "未知錯誤"));
           }
@@ -223,13 +245,12 @@
     // 頁面加載時，根據選擇的主類別加載餐廳
     mounted() {
       this.fetchRestaurants(this.maincat_selected);
-        if (!this.paymentMethod) {
-          this.paymentMethod = 'cash';
-        }
-      },
+      if (!this.paymentMethod) {
+        this.paymentMethod = 'cash';
+      }
+    },
   };
 </script>
-
 
 
 
@@ -286,7 +307,7 @@
 }
 
 .add-to-cart-button {
-  background: linear-gradient(to right, #8ee58e, #4cae4c); /* 漸變綠色 */
+  background: linear-gradient(to right, #8ee58e, #4cae4c); 
   color: white;
   border: none;
   padding: 10px;
@@ -299,68 +320,134 @@
   background: linear-gradient(to right, #4cae4c, #45a049); 
 }
 
+/* 訂單總覽樣式 */
 .order-summary {
-  margin-top: 20px;
-  background-color: rgba(255, 255, 255, 0.9); 
+  background-color: #fff;
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  border: 2px solid #343a40; 
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
 .cart-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
 }
-
-
-.payment-method label {
-  display: inline-block;
-  padding: 5px;
-  font-size: 16px;
-  color: #000; 
-  margin-right: 15px;
-}
-
-.payment-method input[type="radio"] {
-  margin-right: 5px;  
-}
-
-
 
 .remove-button {
-  background-color: #d9534f; 
+  background-color: #ff6347;
   color: white;
   border: none;
-  padding: 5px;
-  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  border-radius: 4px;
 }
 
 .remove-button:hover {
-  background-color: #c9302c; 
+  background-color: #2b110c;
 }
 
 .total-price {
+  font-size: 1.1rem;
   font-weight: bold;
-  margin-top: 10px;
+  text-align: center;
+  margin: 10px 0;
 }
 
-.checkout-button {
-  background: linear-gradient(to right, #0275d8, #0056b3); /* 藍色漸變 */
-  color: white;
+/* 表單樣式 */
+.form-group {
+  margin-top: 12px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-group input {
+  padding: 8px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.form-group input:focus {
+  border-color: #8CAE68;
+  outline: none;
+}
+
+/* 付款方式選擇 */
+.payment-method {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px; 
+}
+
+
+.payment-method button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: rgb(12, 7, 7);
   border: none;
-  padding: 10px;
-  border-radius: 5px;
+  border-radius: 10px; 
+  cursor: pointer; 
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.payment-method button.active { 
+  transform: scale(1.1); 
+}
+
+.payment-method button:hover {
+  transform: scale(1.05); 
+}
+
+.payment-method input {
+  transform: scale(1.2);
+}
+
+.error-message {
+  color: #ff6347;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* 結帳按鈕 */
+.checkout-button {
+  background: linear-gradient(to right, #e8ffe8, #4caea9); 
+  color: rgb(22, 12, 12);
+  border: none;
+  padding: 10px 0;
+  font-size: 1rem;
+  border-radius: 6px;
+  width: 100%;
+  margin-top: 20px;
   cursor: pointer;
-  margin-top: 10px;
-  transition: background-color 0.3s;
+  text-align: center;
+}
+
+.checkout-button:disabled {
+  background-color: #ffd2d2;
+  cursor: not-allowed;
 }
 
 .checkout-button:hover {
-  background: linear-gradient(to right, #0056b3, #004494); 
+  background-color: #15b6e8;
 }
 
 .view-store-button {
@@ -370,12 +457,12 @@
   font-size: 16px;
   font-weight: bold;
   color: white;
-  background-color: #3897ea; /* 顯眼的橘色背景 */
+  background-color: #3897ea; 
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 增加立體感 */
-  transition: all 0.3s ease; /* 平滑動畫效果 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+  transition: all 0.3s ease;
 }
 
 .view-store-button:hover {
