@@ -195,7 +195,7 @@
           try {
             const token = sessionStorage.getItem('token');
             if (!token) {
-              alert('未找到有效的 Token');
+              alert('已登出');
               return;
             }
 
@@ -302,354 +302,409 @@
 </script>
 
 
-  
-  
 <style scoped>
-.root {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
+  :root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light dark;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
 
-.sidebar {
-  width: 300px; 
-  background-color: #8CAE68;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: fixed;
-  height: 100%;
-  top: 0;
-  left: 0;
-  transition: transform 0.3s ease;
-  transform: translateX(-100%);
-}
-
-.sidebar.active {
-  transform: translateX(0);
-}
-
-.menu-icon {
-  font-size: 24px;
-  margin: 20px;
-  cursor: pointer;
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 10px;
-  background-color: #8CAE68;
-  color: white;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  margin-top: 60px;
-}
-
-.user-icon {
-  font-size: 50px;
-}
-
-.username {
-  margin-top: 10px;
-}
-
-.username a {
-  color: white;
-  text-decoration: none;
-}
-
-nav ul {
-  list-style: none;
-  padding: 0;
-  text-align: center;
-}
-
-nav ul li {
-  margin: 20px 0;
-}
-
-nav ul li a {
-  color: white;
-  text-decoration: none;
-}
-
-.main-content {
-  flex-grow: 1; 
-  margin-left: 250px; 
-  padding: 20px;
-  overflow-y: auto; 
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-
-.location-selector select {
-  font-size: 16px;
-}
-
-.search-bar input {
-  padding: 5px;
-  font-size: 16px;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 600;
-  text-align: center;
-  margin: 20px 0;
-  color: #333;
-  border-bottom: 2px solid #f2f2f2;
-  padding-bottom: 10px;
-  letter-spacing: 1px;
-}
-
-
-.restaurant-list {
-  display: flex;
-  overflow-x: auto; 
-  gap: 30px; 
-  padding: 0 20px;
-  scrollbar-width: thin; 
-}
-
-.restaurant-list::-webkit-scrollbar {
-  height: 8px; 
-}
-
-.restaurant-list::-webkit-scrollbar-thumb {
-  background-color: #442727; /* 滾動條的顏色 */
-  border-radius: 10px;
-}
-
-.restaurant-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #ffffff;
-  border-radius: 15px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  padding: 15px;
-  width: 350px;  /* 增加每個餐廳的寬度 */
-  flex-shrink: 0;  
-}
-
-.restaurant-item:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-}
-
-/* 圖片容器 */
-.image-container {
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  border-radius: 10px;
-  margin-bottom: 15px;
-}
-
-.restaurant-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  border-radius: 10px;
-  transition: transform 0.3s ease;
-}
-
-.restaurant-item:hover .restaurant-image {
-  transform: scale(1.05);
-}
-
-/* 餐廳資訊 */
-.restaurant-info {
-  text-align: center;
-}
-
-.restaurant-name {
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.restaurant-address {
-  font-size: 1rem;
-  color: #777;
-  margin-bottom: 12px;
-}
-
-.rating {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-}
-
-.star {
-  color: #ffb400;
-  font-size: 1.2rem;
-}
-
-.avg-rating {
-  font-size: 1rem;
-  color: #444;
-}
-
-
-.latest-offers {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #ffffff; 
-  border: 2px solid black; 
-  border-radius: 10px; 
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.latest-offers h2 {
-  margin-bottom: 20px;
-}
-
-.offers-list {
-  padding: 0;
-}
-
-.offer-item {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  transition: background-color 0.3s;
-}
-
-.offer-item:last-child {
-  border-bottom: none;
-}
-
-.offer-item:hover {
-  background-color: #f0f0f0;
-}
-
-.auth-buttons {
-  display: flex;  
-  color: #000000;                                            
-}
-
-footer {
-  background-color: #1eb8a6;
-  margin-top: 20px;
-  color: #fff;
-  padding: 15px 0;
-  text-align: center;
-  border-radius: 20px; 
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.footer-content {
-  display: flex;
-  justify-content: space-around;
-  padding-bottom: 20px;
-}
-
-.footer-section h4 {
-  font-weight: bold;
-}
-
-.footer-section ul {
-  list-style: none;
-  padding: 0;
-}
-
-.footer-section ul li {
-  margin: 8px 0;
-}
-
-.footer-section ul li a {
-  color: #fff;
-  text-decoration: none;
-  transition: color 0.3s; /* 添加過渡效果 */
-}
-
-.footer-section ul li a:hover {
-  color: #f39c12; /* 懸停顏色 */
-}
-
-.footer-bottom {
-  display: flex;
-  justify-content: space-between; 
-  align-items: center; /* 垂直置中 */
-  padding: 10px; 
-}
-.social-icons a {
-  color: #fff;
-  margin-right: 10px;
-  font-size: 1.5rem;
-}
-
-.language-selector select {
-  background-color: #000;
-  color: #fff;
-  border: 1px solid #fff;
-  padding: 5px;
-  border-radius: 10px; 
-  cursor: pointer; 
-}
-
-.language-selector select:hover {
-  border-color: #f39c12; 
-  transform: translateX(-5px); 
-}
-
-p {
-  margin: 0;
-  text-align: right;
-} 
-
-.logo-container {
-  text-align: center; 
-}
-
-.logo {
-  width: 100px; 
-  height: auto; 
-}
-
-
-@media (max-width: 768px) {
+  @media (prefers-color-scheme: light) {
+    :root {
+      color: #213547;
+      background-color: #ffffff;
+    }
+  }
+  
+  .root {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  /* 側邊欄 */
   .sidebar {
-    width: 100%; 
-    position: relative; 
-    transform: translateX(0); 
+    width: 400px;
+    background-color: #8CAE68;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .menu-icon {
+    font-size: 24px;
+    margin: 20px;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 10px;
+    background-color: #8CAE68;
+    color: white;
+    transition: transform 0.2s ease;
+  }
+
+  .menu-icon:hover {
+    transform: rotate(90deg);
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 60px;
+    transition: transform 0.3s ease;
+  }
+
+  .user-info:hover {
+    transform: translateY(-5px);
+  }
+
+  .user-icon {
+    font-size: 50px;
+  }
+
+  .username {
+    margin-top: 10px;
+  }
+
+  .username a {
+    color: white;
+    text-decoration: none;
+  }
+
+ 
+  nav ul {
+    list-style: none;
+    padding: 0;
+    text-align: center;
+  }
+
+  nav ul li {
+    margin: 30px 0;
+  }
+
+  nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.0rem;
+    font-weight: 600;
+    transition: color 0.3s;
+  }
+
+  nav ul li a:hover {
+    color: #0f0a03;
+  }
+
+  .logo-container {
+    text-align: center;
+  }
+  
+  .logo {
+    width: 100px; 
+    height: auto; 
+    max-width: 100%; 
+    object-fit: contain; 
   }
 
   .main-content {
-    margin-left: 0; 
-    padding: 10px; 
+    flex-grow: 1;
+    margin-left: 400px;
+    padding: 20px;
+    overflow-y: auto;
   }
 
-  .restaurant-slider {
-    flex-direction: column; 
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .location-selector select {
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+
+  .location-selector select:hover {
+    background-color: #f0f0f0;
+  }
+
+  /* 搜尋框 */
+  .search-bar input {
+    padding: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+
+  .search-bar input:focus {
+    background-color: #f0f0f0;
+    outline: none;
+  }
+
+  /* 項目標題 */
+  .section-title {
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 20px 0;
+    color: #333;
+    border-bottom: 2px solid #f2f2f2;
+    padding-bottom: 10px;
+    letter-spacing: 1px;
+  }
+
+  /* 餐廳列表 */
+  .restaurant-list {
+    display: flex;
+    overflow-x: auto;
+    gap: 30px;
+    padding: 0 20px;
+    scrollbar-width: thin;
+  }
+
+  .restaurant-list::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .restaurant-list::-webkit-scrollbar-thumb {
+    background-color: #442727;
+    border-radius: 10px;
   }
 
   .restaurant-item {
-    min-width: 100%;
-    height: auto; 
-    margin-bottom: 10px; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 15px;
+    width: 350px;
+    flex-shrink: 0;
   }
 
-}
-
-@media (max-width: 768px) {
-  .food-name {
-    font-size: 14px;  /* 在小螢幕上縮小字體 */
+  .restaurant-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
   }
+
+  .image-container {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 10px;
+    margin-bottom: 15px;
+  }
+
+  .restaurant-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+  }
+
+  .restaurant-item:hover .restaurant-image {
+    transform: scale(1.05);
+  }
+
+  .restaurant-info {
+    text-align: center;
+  }
+
+  .restaurant-name {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .restaurant-address {
+    font-size: 1rem;
+    color: #777;
+    margin-bottom: 12px;
+  }
+
+  .rating {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .star {
+    color: #ffb400;
+    font-size: 1.2rem;
+  }
+
+  .avg-rating {
+    font-size: 1rem;
+    color: #444;
+  }
+
+
+  .latest-offers {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #ffffff;
+    border: 2px solid #d4d4d4;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .latest-offers:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .latest-offers h2 {
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .offers-list {
+    padding: 0;
+  }
+
+  .offer-item {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .offer-item:last-child {
+    border-bottom: none;
+  }
+
+  .offer-item:hover {
+    background-color: #f9f9f9;
+    transform: scale(1.02);
+  }
+
+  .offer-item a {
+    color: #333;
+    text-decoration: none;
+  }
+
+  .offer-item a:hover {
+    color: #00796b;
+  }
+
+  /* 登入與註冊按鈕 */
+  .auth-buttons {
+    display: flex;
+    color: #000000;
+  }
+
+  /* 頁腳 */
+  footer {
+    background-color: #1eb8a6;
+    margin-top: 20px;
+    color: #fff;
+    padding: 15px 0;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .footer-content {
+    display: flex;
+    justify-content: space-around;
+    padding-bottom: 20px;
+  }
+
+  .footer-section h4 {
+    font-weight: bold;
+  }
+
+  .footer-section ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .footer-section ul li {
+    margin: 8px 0;
+  }
+
+  .footer-section ul li a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .footer-section ul li a:hover {
+    color: #80d5d1;
+  }
+
+  .footer-bottom {
+  display: flex;
+  justify-content: flex-end; 
+  align-items: center; 
+  gap: 20px;
 }
 
+.footer-bottom .social-icons {
+  display: flex;
+  gap: 10px; 
+}
+
+.footer-bottom .language-selector {
+  margin-left: 20px; 
+}
+
+.footer-bottom p {
+  margin-left: 20px; 
+  text-align: right;
+}
+
+  /* 響應式設置 */
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 100%;
+      position: relative;
+      transform: translateX(0);
+    }
+
+    .main-content {
+      margin-left: 0;
+      padding: 10px;
+    }
+
+    .restaurant-slider {
+      flex-direction: column;
+    }
+
+    .restaurant-item {
+      min-width: 100%;
+      height: auto;
+      margin-bottom: 10px;
+    }
+
+    .food-name {
+      font-size: 14px;
+    }
+  }
 </style>

@@ -80,75 +80,107 @@ export default {
 </script>
 
 <style scoped>
-.register-container {
-  width: 350px; 
-  margin: 50px auto; 
-  background-color: #cfeed0; 
-  border-radius: 12px; 
-  padding: 30px; 
-  box-shadow: 0 4px 15px rgba(52, 30, 30, 0.2); 
-}
-
-.form-title {
-  text-align: center;
-  color: #00796b; 
-  margin-bottom: 20px;
-}
-
-.register-form {
-  display: flex;
-  flex-direction: column; 
-}
-
-.form-group {
-  margin-bottom: 15px; 
-}
-
-.form-group label {
-  display: block; 
-  margin-bottom: 5px; 
-  font-weight: bold; 
-}
-
-.form-group input {
-  padding: 10px; 
-  border: 1px solid #5b3a3a; 
-  border-radius: 8px; 
-  width: 100%; 
-  box-sizing: border-box; 
-}
-
-.submit-button {
-  padding: 12px; 
-  background-color: #25a294; 
-  color: white; 
-  border: none; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-size: 1em; 
-}
-
-.submit-button:hover {
-  background-color: #004d40; 
-}
-
-.auth-buttons {
-  display: flex; 
-  justify-content: center; 
-  margin-top: 15px; 
-}
-
-.auth-buttons button {
-  padding: 10px 15px; 
-  border: none; 
-  border-radius: 4px; 
-  background-color: #4CAF50; 
-  color: white; 
-  cursor: pointer; 
-  transition: background-color 0.3s; 
-}
-
-.auth-buttons button:hover {
-  opacity: 0.9; 
-}
-</style>
+  /* 註冊容器 */
+  .register-container {
+    width: 400px;
+    margin: 80px auto;
+    background: linear-gradient(135deg, #a2dff7, #ffecb3);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  /* 表單標題 */
+  .form-title {
+    text-align: center;
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+  }
+  
+  /* 註冊表單 */
+  .register-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* 單個表單項 */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  /* 表單標籤 */
+  .form-group label {
+    font-size: 0.95rem;
+    color: #555;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  
+  /* 表單輸入框 */
+  .form-group input {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  /* 輸入框焦點效果 */
+  .form-group input:focus {
+    border-color: #25a294;
+    box-shadow: 0 0 8px rgba(37, 162, 148, 0.2);
+  }
+  
+  /* 提交按鈕 */
+  .submit-button {
+    padding: 14px;
+    background-color: #25a294;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+  }
+  
+  .submit-button:hover {
+    background-color: #00796b;
+  }
+  
+  /* 按鈕區域 */
+  .auth-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  /* 其他登錄或註冊按鈕 */
+  .auth-buttons button {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 25px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-left: 10px;
+    transition: background-color 0.3s, transform 0.2s;
+  }
+  
+  .auth-buttons button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+  }
+  
+  .auth-buttons button:active {
+    transform: translateY(0);
+  }
+  </style>
+  

@@ -19,8 +19,7 @@
         <div class="item-details">
           <h4>{{ item.name }}</h4>
           <p>{{ item.description }}</p>
-          <span class="price">{{ item.price }} 元</span>
-
+          <span class="price">{{ Math.round(item.price) }} 元</span>
           <!-- 加入購物車的按鈕 -->
           <button @click="addToCart(item)" class="add-to-cart-button">加入購物車</button>
         </div>
@@ -31,7 +30,7 @@
     <div class="order-summary" v-if="cart.length">
       <h3>訂單總覽</h3>
       <div class="cart-item" v-for="(item, index) in cart" :key="index">
-        <span>{{ item.name }} - {{ item.quantity }} x {{ item.price }} 元</span>
+        <span>{{ item.name }} - {{ item.quantity }} x {{ Math.round(item.price) }} 元</span>
         <button @click="removeFromCart(index)" class="remove-button">移除</button>
       </div>
       <p class="total-price">總價: {{ totalPrice }} 元</p>
@@ -44,8 +43,7 @@
           <input type="radio" v-model="paymentMethod" value="credit_card"> 信用卡
         </label>
       </div>
-
-
+      
       <!-- 信用卡資料 -->
       <div v-if="paymentMethod === 'credit_card'">
         <label for="credit-card-number">信用卡號：</label>
@@ -282,12 +280,13 @@
 }
 
 .price {
+  margin-right: 20px;
   font-weight: bold;
   color: #d9534f;
 }
 
 .add-to-cart-button {
-  background: linear-gradient(to right, #5cb85c, #4cae4c); /* 漸變綠色 */
+  background: linear-gradient(to right, #8ee58e, #4cae4c); /* 漸變綠色 */
   color: white;
   border: none;
   padding: 10px;
@@ -314,6 +313,21 @@
   justify-content: space-between;
   align-items: center;
 }
+
+
+.payment-method label {
+  display: inline-block;
+  padding: 5px;
+  font-size: 16px;
+  color: #000; 
+  margin-right: 15px;
+}
+
+.payment-method input[type="radio"] {
+  margin-right: 5px;  
+}
+
+
 
 .remove-button {
   background-color: #d9534f; 
