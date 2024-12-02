@@ -20,7 +20,7 @@ from urllib.parse import quote
 app = Flask(__name__, static_url_path='/static', static_folder='public')
 
 
-CORS(app)  # 允許所有來源的請求
+CORS(app,origins="http://localhost:5173")  # 允許所有來源的請求
 # 配置 CORS，允許來自前端的跨域請求並支持攜帶憑證（如 cookies）
 CORS(app, supports_credentials=True, origins=["http://localhost:5173/"])
 app.config['JWT_SECRET_KEY'] = "ckdsojcaojcosajcicdsji" 
@@ -128,6 +128,13 @@ class Comment(db.Model):
     parent_comment = db.relationship('Comment', remote_side=[id])  # 回覆的父評論
     user = db.relationship('User', backref=db.backref('comments', lazy=True))  # 關聯到 User 表，取得該用戶所有評論
 
+
+#Like 模型定義
+class Like(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 
@@ -488,78 +495,117 @@ def get_store_details_by_id(id):
 # 評論
 @app.route('/api/comments/store/<int:food_id>', methods=['GET'])
 def get_comments_by_store(food_id):
-    comments = Comment.query.filter_by(food_id=food_id).all()
-    if not comments:
-        return jsonify({'message': 'No comments found for this store.'}), 404
-    
-    result = []
-    for comment in comments:
-        result.append({
-            'id': comment.id,
-            'user': comment.user,
-            'data': comment.data,
-            'likes': comment.likes,
-            'replies': comment.replies,
-            'food_id': comment.food_id,
-            'parent_comment_id': comment.parent_comment_id
-        })
+    try:
+        comments = Comment.query.filter_by(food_id=food_id).all()
+        if not comments:
+            return jsonify({'message': 'No comments found for this store.'}), 404
+        
+        result = []
+        for comment in comments:
+            result.append({
+                'id': comment.id,
+                'user': {
+                    'id': comment.user.id,  # 假設 user 是一個 User 物件
+                    'username': comment.user.username,  # 根據 User 物件的屬性進行設置
+                    'email': comment.user.email,  # 假設你有用戶的 email
+                    'profile_picture': comment.user.profile_picture if hasattr(comment.user, 'profile_picture') else None  # 假設有用戶的頭像
+                },
+                'data': comment.data,
+                'likes': comment.likes,
+                'replies': comment.replies,
+                'food_id': comment.food_id,
+                'parent_comment_id': comment.parent_comment_id
+            })
 
-    return jsonify(result)
+        return jsonify(result), 200
+    except Exception as e:
+        logging.error(f"Error fetching comments: {str(e)}")
+        return jsonify({'message': 'Internal Server Error'}), 500
+
 
 # 點讚
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
-@jwt_required()
-def like_comment(current_user, comment_id):
-    comment = Comment.query.filter_by(id=comment_id).first()
-    if not comment:
-        return jsonify({'message': 'Comment not found!'}), 404
-    
-    comment.likes += 1
-    db.session.commit()
-
-    return jsonify({'message': 'Liked successfully', 'likes': comment.likes}), 200
+@jwt_required()  # 驗證用戶是否登入
+def like_comment(comment_id):
+    try:
+        comment = Comment.query.get(comment_id)
+        if not comment:
+            return jsonify({'message': 'Comment not found'}), 404  # 如果沒有找到評論
+        
+        comment.likes += 1  # 增加點讚數
+        db.session.commit()  # 提交更改
+        return jsonify({'likes': comment.likes}), 200  # 返回更新後的點讚數
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")  # 記錄錯誤
+        return jsonify({'error': str(e)}), 500  # 捕獲並返回任何錯誤
 
 # 回覆評論
 @app.route('/api/comments/reply/<int:parent_comment_id>', methods=['POST'])
-@jwt_required()
+@jwt_required()  
 def reply_to_comment(current_user, parent_comment_id):
-    parent_comment = Comment.query.filter_by(id=parent_comment_id).first()
-    if not parent_comment:
-        return jsonify({'message': 'Parent comment not found!'}), 404
-    
-    data = request.get_json()
-    reply = Comment(
-        user=current_user.username,
-        data=data['reply'],
-        food_id=parent_comment.food_id,
-        parent_comment_id=parent_comment.id
-    )
-    db.session.add(reply)
-    db.session.commit()
 
-    parent_comment.replies += 1  # 更新父評論的回覆數
-    db.session.commit()
+    try:
+        # 你的處理邏輯
+        parent_comment = Comment.query.filter_by(id=parent_comment_id).first()
+        if not parent_comment:
+            return jsonify({'message': 'Parent comment not found!'}), 404
 
-    return jsonify({'message': 'Reply posted successfully'}), 200
+        data = request.get_json()
+        reply_content = data.get('reply', '').strip()
+        if not reply_content:
+            return jsonify({'message': 'Reply content cannot be empty.'}), 400
+
+        food_id = parent_comment.food_id
+        reply = Comment(
+            user_id=current_user.id,
+            data=reply_content,
+            food_id=food_id,
+            parent_comment_id=parent_comment.id
+        )
+        db.session.add(reply)
+        parent_comment.replies += 1
+        db.session.commit()
+
+        return jsonify({'message': 'Reply posted successfully'}), 201
+    except Exception as e:
+        logging.error(f"Error while posting reply: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
 
 #編輯評論  用戶可以編輯自己的評論，但只能編輯自己發表的評論。
 @app.route('/api/comments/<int:comment_id>', methods=['PUT'])
-@jwt_required
-def edit_comment(current_user, comment_id):
+@jwt_required()
+def edit_comment(comment_id):
+    # 確認用戶是否登入，並獲取當前用戶的 ID
+    current_user = get_jwt_identity()
+
+    # 查詢該評論是否存在
     comment = Comment.query.filter_by(id=comment_id).first()
     if not comment:
         return jsonify({'message': 'Comment not found!'}), 404
 
-    if comment.user != current_user.username:
+    # 檢查該評論是否是當前用戶的
+    if comment.user_id != current_user['id']:  # 確保 current_user 中包含 id
         return jsonify({'message': 'You can only edit your own comments.'}), 403
 
+    # 確認新內容
     data = request.get_json()
-    comment.data = data['data']  # 更新評論內容
-    db.session.commit()
+    new_content = data.get('data', '').strip()
+    if not new_content:
+        return jsonify({'message': 'Comment content cannot be empty.'}), 400
+    if new_content == comment.data:
+        return jsonify({'message': 'No changes detected in the comment.'}), 200
 
-    return jsonify({'message': 'Comment updated successfully'}), 200
-
-
+    # 更新評論內容
+    try:
+        comment.data = new_content
+        db.session.commit()
+        return jsonify({'message': 'Comment updated successfully'}), 200
+    except Exception as e:
+        # 捕獲任何資料庫錯誤並返回錯誤訊息
+        db.session.rollback()  # 若有錯誤，回滾更改
+        return jsonify({'message': f'Error updating comment: {str(e)}'}), 500
+# 結帳
 @app.route('/checkout', methods=['POST'])
 @jwt_required()  # 用戶可選擇是否提供 JWT
 def checkout():

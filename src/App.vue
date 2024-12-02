@@ -193,7 +193,7 @@
       const handleSignOutClick = async () => {
         if (confirm("確定要登出嗎？")) {
           try {
-            const token = sessionStorage.getItem('token');
+            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
             if (!token) {
               alert('已登出');
               return;
@@ -207,8 +207,8 @@
               user.value = null; 
               sessionStorage.removeItem('token');
               sessionStorage.removeItem('username');
-              getUserData();
-              router.push('/login');
+              localStorage.removeItem('token');  // 清除本地儲存
+              router.push('/login');  // 登出後跳轉至登入頁面
             }
           } catch (error) {
             console.error('登出失敗:', error.response ? error.response.data : error.message);
@@ -271,7 +271,6 @@
       watch(maincat_selected, (newValue) => {
         loadTopRestaurants(); // 調用 loadTopRestaurants
       });
-       
 
       // 在組件掛載時加載資料
       onMounted(() => {
@@ -304,7 +303,6 @@
 
 
 <style scoped>
-  /* General styling */
   :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
