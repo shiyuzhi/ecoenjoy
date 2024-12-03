@@ -27,60 +27,65 @@
 </template>
 
 <script>
-import axios from 'axios';  // 確保安裝了axios
-
-export default {
-  data() {
-    return {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    };
-  },
-  methods: {
-    async handleRegister() {
-      if (this.password !== this.confirmPassword) {
-        alert("密碼不一致！");
-        return;
-      }
-
-      // 可以加入正則表達式來檢查 email 格式
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(this.email)) {
-        alert("請輸入有效的電子郵件地址！");
-        return;
-      }
-
-      try {
-        const response = await axios.post('http://localhost:5000/register', {
-          username: this.username,
-          email: this.email,
-          password: this.password,
-        });
-
-        if (response.data.success) {
-          alert(`註冊成功！用戶名: ${this.username}`);
-          // 可以在這裡重定向到登入頁面
-          this.toggleLoginModal();
-        } else {
-          alert('註冊失敗！請檢查您的資料。');
+  import axios from 'axios';  // 確保安裝了axios
+  
+  export default {
+    data() {
+      return {
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      };
+    },
+    methods: {
+      async handleRegister() {
+        // 檢查密碼是否一致
+        if (this.password !== this.confirmPassword) {
+          alert("密碼不一致！");
+          return;
         }
-      } catch (error) {
-        console.error(error);
-        alert('發生錯誤，請稍後再試。');
+  
+        // 檢查 email 格式是否有效
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(this.email)) {
+          alert("請輸入有效的電子郵件地址！");
+          return;
+        }
+  
+        try {
+          const response = await axios.post('http://localhost:5000/register', {
+            username: this.username,
+            email: this.email,
+            password: this.password,
+          });
+  
+          // 打印回應，方便調試
+          console.log(response); // 確認回應格式
+  
+          // 根據回應決定註冊是否成功
+          if (response.data.success) {
+            alert(`註冊成功！用戶名: ${this.username}`);
+            this.toggleLoginModal();  // 成功後跳轉到登入頁面
+          } else {
+            alert(`註冊失敗！${response.data.message}`);
+          }
+        } catch (error) {
+          console.error(error); // 記錄錯誤，方便調試
+          alert('發生錯誤，請稍後再試。');
+        }
+      },
+  
+      toggleLoginModal() {
+        // 切換到登入畫面
+        this.$router.push('/login'); 
       }
     },
-    toggleLoginModal() {
-      // 切換到登入畫面
-      this.$router.push('/login'); 
-    }
-  },
-};
+  };
 </script>
+  
 
 <style scoped>
-  /* 註冊容器 */
   .register-container {
     width: 400px;
     margin: 80px auto;

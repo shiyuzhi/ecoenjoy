@@ -260,11 +260,11 @@ def register():
     password = data.get('password')
 
     if not username or not email or not password:
-        return jsonify({'message': '所有欄位都是必需的'}), 400
+        return jsonify({'success': False, 'message': '所有欄位都是必需的'}), 400
 
     # 檢查用戶名或郵箱是否已存在
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'message': '用戶名或郵箱已被使用'}), 400
+        return jsonify({'success': False, 'message': '用戶名或郵箱已被使用'}), 400
 
     # 創建新用戶
     new_user = User(username=username, email=email)
@@ -273,10 +273,10 @@ def register():
     try:
         db.session.add(new_user)
         db.session.commit()
-        return jsonify({'message': '註冊成功'}), 201
+        return jsonify({'success': True, 'message': '註冊成功'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': '註冊失敗', 'error': str(e)}), 500
+        return jsonify({'success': False, 'message': '註冊失敗', 'error': str(e)}), 500
 
 
 #登入
