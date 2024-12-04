@@ -2,7 +2,7 @@
   <div class="diet-log">
     <header>
       <h1>飲食日誌</h1>
-      <input type="date" v-model="currentDate" @change="loadCurrentDateRecords()" />
+      <input type="date" v-model="currentDate" @change="loadDailyLog()" />
       <h2>{{ currentDate }}</h2>
       <div class="calories">
         <h3>營養攝取概覽</h3>
@@ -22,12 +22,13 @@
       </div>
     </div>
 
-    <button class="add-food-button" @click="openAddFoodModal">+ 添加食物</button>
+    <!-- 僅當日期為今天時顯示按鈕 -->
+    <button v-if="isToday" class="add-food-button" @click="openAddFoodModal">+ 添加食物</button>
 
     <h3>已添加食物:</h3>
     <ul>
-      <li v-for="food in getCurrentDateFoods()" :key="food.name">
-        {{ food.name }} - 碳水: {{ food.carbs }}g，蛋白質: {{ food.protein }}g，脂肪: {{ food.fat }}g，熱量: {{ food.calories }} kcal
+      <li v-for="food in foods" :key="food.name">
+        {{ food.name }} ({{ food.category }}) - 碳水: {{ food.carbs }}g，蛋白質: {{ food.protein }}g，脂肪: {{ food.fat }}g，熱量: {{ food.calories }} kcal
       </li>
     </ul>
 
@@ -60,6 +61,7 @@
           <label for="foodCalories">熱量 (kcal):</label>
           <input type="number" id="foodCalories" v-model.number="newFood.calories" required />
 
+
           <button type="submit">添加</button>
         </form>
       </div>
@@ -84,10 +86,17 @@
 </template>
 
 <script>
+  import axios from 'axios';
+
   export default {
   data() {
+    const today = new Date();
+    const utcDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    const formattedToday = utcDate.toISOString().slice(0, 10);  // 轉換為 'YYYY-MM-DD'
+    console.log("formattedToday (Front-end UTC Date):", formattedToday);  // 除錯輸出
     return {
-      currentDate: new Date().toISOString().substr(0, 10), // 以 YYYY-MM-DD 格式初始化當前日期
+      currentDate: formattedToday, // 以 YYYY-MM-DD 格式初始化當前日期
+      todayDate: formattedToday,
       records: {}, 
       totalCalories: 0, 
       dailyGoal: 2000, 
@@ -98,7 +107,7 @@
         { label: "熱量", key: "calories", current: 0, recommended: 2000 }
       ],
       foodLog: {},
-
+      foods: [],
       foodCategories: [
         {
           label: '水果',
@@ -180,75 +189,61 @@
       }
     };
   },
+  computed: {
+    isToday() {
+      return this.currentDate === this.todayDate;
+    }
+  },
   methods: {
-    loadCurrentDateRecords() {
-      const recordsForDate = this.records[this.currentDate];
-      if (recordsForDate) {
+    async loadDailyLog() {
+      try {
+        const response = await axios.get(`/api/log/${this.currentDate}`);
+        const log = response.data;
+
         this.nutrients.forEach(nutrient => {
-          nutrient.current = recordsForDate.nutrients[nutrient.key] || 0;
+          nutrient.current = log[nutrient.key] || 0;
         });
-        if (category) {
-            category.current = cat.current;
+
+        this.foods = log.foods || [];
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          alert("認證失敗，請重新登入！");
+          this.$router.push("/login");
+        } else {
+          console.error("Error loading daily log:", error);
         }
-      } else {
-        this.resetNutrients();
-        this.foodCategories.forEach(cat => {
-          cat.current = 0;
-        });
       }
-    },
-    getCurrentDateFoods() {
-      const recordsForDate = this.records[this.currentDate];
-      return recordsForDate ? recordsForDate.foods : [];
     },
     openAddFoodModal() {
       this.showAddFoodModal = true;
     },
     closeAddFoodModal() {
       this.showAddFoodModal = false;
-      this.resetNewFood();
+      this.newFood = { name: '', category: '', carbs: 0, protein: 0, fat: 0, calories: 0 };
     },
-    addFood() {
-      const category = this.foodCategories.find(cat => cat.label === this.newFood.category);
-      if (category){
-        category.current++;
-        if (!this.records[this.currentDate]) {
-          this.records[this.currentDate] = {
-            nutrients: {},
-            foods: []
-          };
-        }
-
-        const recordsForDate = this.records[this.currentDate];
-        recordsForDate.foods.push({ ...this.newFood });
-
-        // 更新每項營養素
-        this.nutrients.forEach(nutrient => {
-          const key = nutrient.key;
-          if (!recordsForDate.nutrients[key]) {
-            recordsForDate.nutrients[key] = 0;
-          }
-          recordsForDate.nutrients[key] += this.newFood[key];
-        });
-
-        this.loadCurrentDateRecords();
+    async addFood() {
+      const token = localStorage.getItem("token");
+      console.log("Token from localStorage: ", token);  // 調試，檢查 token 是否正確讀取
+  
+      if (!token) {
+        alert("請先登入以使用日誌");
+        this.$router.push("/login");
+        return;
       }
+      // 發送新增食物請求
+      const response = await axios.post(
+        `/api/log`,
+        {
+          log_date: this.currentDate, // 將日期加入請求主體
+          foods: [this.newFood],
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("API response: ", response);
+      // 更新當天的食物清單
+      this.loadDailyLog();
+
       this.closeAddFoodModal();
-    },
-    resetNewFood() {
-      this.newFood = {
-        name: '',
-        category: '',
-        carbs: 0,
-        protein: 0,
-        fat: 0,
-        calories: 0
-      };
-    },
-    resetNutrients() {
-      this.nutrients.forEach(nutrient => {
-        nutrient.current = 0;
-      });
     },
     showDetails(food) {
       this.selectedCategory = food;
@@ -259,9 +254,8 @@
       this.selectedFood = {};
     }
   },
-
   mounted() {
-    this.loadCurrentDateRecords();
+    this.loadDailyLog();
   }
 };
 </script>
