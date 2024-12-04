@@ -496,19 +496,25 @@ def get_store_details_by_id(id):
 @app.route('/api/comments/store/<int:food_id>', methods=['GET'])
 def get_comments_by_store(food_id):
     try:
+        # 輸出收到的 food_id
+        logging.info(f"Received food_id: {food_id}")
+
+        # 查詢符合 food_id 的評論
         comments = Comment.query.filter_by(food_id=food_id).all()
+
+        # 若找不到評論，返回空列表
         if not comments:
-            return jsonify({'message': 'No comments found for this store.'}), 404
-        
+            return jsonify([]), 200  # 返回空列表，而不是 404
+
         result = []
         for comment in comments:
             result.append({
                 'id': comment.id,
                 'user': {
-                    'id': comment.user.id,  # 假設 user 是一個 User 物件
-                    'username': comment.user.username,  # 根據 User 物件的屬性進行設置
-                    'email': comment.user.email,  # 假設你有用戶的 email
-                    'profile_picture': comment.user.profile_picture if hasattr(comment.user, 'profile_picture') else None  # 假設有用戶的頭像
+                    'id': comment.user.id if comment.user else None,
+                    'username': comment.user.username if comment.user else None,
+                    'email': comment.user.email if comment.user else None,
+                    'profile_picture': comment.user.profile_picture if comment.user and hasattr(comment.user, 'profile_picture') else None
                 },
                 'data': comment.data,
                 'likes': comment.likes,
@@ -518,10 +524,10 @@ def get_comments_by_store(food_id):
             })
 
         return jsonify(result), 200
+
     except Exception as e:
         logging.error(f"Error fetching comments: {str(e)}")
         return jsonify({'message': 'Internal Server Error'}), 500
-
 
 # 點讚
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
