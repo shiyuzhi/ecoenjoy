@@ -364,11 +364,85 @@ def invalid_token_callback(error):
 def missing_token_callback(error):
     return jsonify({"msg": "請提供有效的 token"}), 401
 
-# #結帳
-# @app.route('/checkout', methods=['GET', 'POST'])
-# def checkout():
-#     # 處理 checkout 的邏輯
-#     return jsonify({"message": "Checkout Page"})
+# 獲取某天的紀錄
+@app.route('/api/log/<date>', methods=['GET'])
+@jwt_required()
+def get_daily_log(date):
+    # 獲取當前用戶身份（若為訪客則返回 None）
+    current_user = get_jwt_identity()
+    diet_log = DietLog.query.filter_by(user_id=current_user, log_date=date).first()
+    
+    if not diet_log:
+        return jsonify({
+            "log_date": date,
+            "carbs": 0,
+            "protein": 0,
+            "fat": 0,
+            "calories": 0,
+            "foods": []
+        })
+    
+    return jsonify({
+        "log_date": diet_log.log_date,
+        "carbs": diet_log.carbs,
+        "protein": diet_log.protein,
+        "fat": diet_log.fat,
+        "calories": diet_log.calories,
+        "foods": diet_log.foods
+    })
+
+# 更新每日紀錄（僅允許當天）
+@app.route('/api/log', methods=['POST'])
+@jwt_required()
+def update_daily_log():
+    data = request.json
+    # 獲取當前用戶身份（若為訪客則返回 None）
+    current_user = get_jwt_identity()
+    log_date = data.get("log_date")  # 獲取log_date
+    print(log_date)
+    foods = data.get("foods", [])
+    print(foods)
+
+    # 僅允許當天更新
+    # if log_date != today_date:
+    #     return jsonify({'error': 'Only today\'s record can be updated.'}), 403
+    # 查找當天日誌，若不存在則創建
+    log = DietLog.query.filter_by(user_id=current_user, log_date=log_date).first()
+    if not log:
+        # 如果日誌不存在，初始化日誌
+        log = DietLog(
+            user_id=current_user,
+            log_date=log_date,
+            carbs=0,
+            protein=0,
+            fat=0,
+            calories=0,
+            foods=[]
+        )
+        db.session.add(log)
+
+    # 確保 log 的營養素字段是數值型
+    log.carbs = log.carbs or 0
+    log.protein = log.protein or 0
+    log.fat = log.fat or 0
+    log.calories = log.calories or 0
+    # 合併新舊食物列表
+    existing_foods = log.foods or []  # 獲取現有食物列表
+    updated_foods = existing_foods + foods  # 合併現有和新添加的食物
+    print("Updated foods list:", updated_foods)
+
+    for food in foods:
+        # 更新日誌中的營養素數值
+        log.carbs += int(food.get("carbs", 0))
+        log.protein += int(food.get("protein", 0))
+        log.fat += int(food.get("fat", 0))
+        log.calories += int(food.get("calories", 0))
+
+        #log.foods.append(food)  # 將新的食物字典添加到列表
+    # 更新 foods 欄位
+    log.foods = updated_foods
+    db.session.commit()
+    return jsonify({"message": "Food added to log successfully"}), 200
 
 
 #食物分類
@@ -453,8 +527,6 @@ def get_foods():
         return jsonify({"error": "內部伺服器錯誤"}), 500
     
 # 查詢每家餐廳的平均評分並排序
-from urllib.parse import quote
-
 @app.route('/api/top-restaurants', methods=['GET'])
 def get_top_restaurants():
     top_restaurants = db.session.query(
@@ -480,6 +552,7 @@ def get_top_restaurants():
         restaurants.append(restaurant_data)
 
     return jsonify(restaurants)
+
 
 
 # 獲取餐廳詳細資料的路由
@@ -663,36 +736,30 @@ def checkout():
     return jsonify({"message": "結帳成功（訪客身份，未儲存訂單）"}), 200
 
 
+#顯示歷史訂單
 @app.route('/history', methods=['GET','POST'])
 @jwt_required()  # 用戶必須登入
 def get_history():
-    #current_user_id = get_jwt_identity()
     # 獲取當前用戶身份
     current_user = get_jwt_identity()
     user = User.query.filter_by(id=current_user).first()
     if not user:
         return jsonify({"error": "用戶不存在"}), 403
 
-    # 獲取當天的日期範圍
+    # 當前時間
     now = datetime.now(timezone.utc)
-    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_today = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    # 查詢當天訂單
-    # records = Record.query.filter(
-    #     Record.user_id == user.id,
-    #     Record.timestamp >= start_of_day,
-    #     Record.timestamp <= end_of_day
-    # ).all()
-    # print(records)
+    # 獲取前天的開始時間
+    start_of_two_days_ago = start_of_today - timedelta(days=2)
+
 
     # 查詢該用戶的歷史訂單
     records = Record.query.filter_by(user_id=user.id).all()
     if not records:
         return jsonify({"message": "沒有歷史訂單"}), 200
 
-    # if not records:
-    #     return jsonify({"message": "今天無紀錄"}), 404
 
     # 計算總營養成分並準備卡片數據
     total_carbo = total_protein = total_fat = total_calories = 0
@@ -709,7 +776,7 @@ def get_history():
             record_time = record_time.replace(tzinfo=timezone.utc)
 
         # 如果訂單是當天的，累加營養數據    
-        if start_of_day <= record_time <= end_of_day:
+        if start_of_two_days_ago <= record_time <= end_of_today:
             total_carbo += food.carbo
             total_protein += food.protein
             total_fat += food.fat
@@ -737,80 +804,102 @@ def get_history():
         }
     }), 200
 
-@app.route('/api/log/<date>', methods=['GET'])
-@jwt_required()
-def get_daily_log(date):
-    # 獲取當前用戶身份（若為訪客則返回 None）
-    current_user = get_jwt_identity()
-    diet_log = DietLog.query.filter_by(user_id=current_user, log_date=date).first()
-    
-    if not diet_log:
-        return jsonify({
-            "log_date": date,
-            "carbs": 0,
-            "protein": 0,
-            "fat": 0,
-            "calories": 0,
-            "foods": []
-        })
-    
-    return jsonify({
-        "log_date": diet_log.log_date,
-        "carbs": diet_log.carbs,
-        "protein": diet_log.protein,
-        "fat": diet_log.fat,
-        "calories": diet_log.calories,
-        "foods": diet_log.foods
-    })
 
-# 更新每日紀錄（僅允許當天）
-@app.route('/api/log', methods=['POST'])
-@jwt_required()
-def update_daily_log():
-    data = request.json
-    # 獲取當前用戶身份（若為訪客則返回 None）
+# 推薦
+@app.route('/api/recommendations', methods=['GET'])
+@jwt_required()  # 用戶必須登入
+def get_recommendations():
+    # 獲取當前用戶身份
     current_user = get_jwt_identity()
-    log_date = data.get("log_date")  # 獲取log_date
-    print(log_date)
-    foods = data.get("foods", [])
-    print(foods)
-    # 僅允許當天更新
-    # if log_date != today_date:
-    #     return jsonify({'error': 'Only today\'s record can be updated.'}), 403
-    # 查找當天日誌，若不存在則創建
-    log = DietLog.query.filter_by(user_id=current_user, log_date=log_date).first()
-    if not log:
-        # 如果日誌不存在，初始化日誌
-        log = DietLog(
-            user_id=current_user,
-            log_date=log_date,
-            carbs=0,
-            protein=0,
-            fat=0,
-            calories=0,
-            foods=[]
-        )
-        db.session.add(log)
-    # 確保 log 的營養素字段是數值型
-    log.carbs = log.carbs or 0
-    log.protein = log.protein or 0
-    log.fat = log.fat or 0
-    log.calories = log.calories or 0
-    # 合併新舊食物列表
-    existing_foods = log.foods or []  # 獲取現有食物列表
-    updated_foods = existing_foods + foods  # 合併現有和新添加的食物
-    print("Updated foods list:", updated_foods)
-    for food in foods:
-        # 更新日誌中的營養素數值
-        log.carbs += int(food.get("carbs", 0))
-        log.protein += int(food.get("protein", 0))
-        log.fat += int(food.get("fat", 0))
-        log.calories += int(food.get("calories", 0))
-        #log.foods.append(food)  # 將新的食物字典添加到列表
-    # 更新 foods 欄位
-    log.foods = updated_foods
-    db.session.commit()
-    return jsonify({"message": "Food added to log successfully"}), 200
+    user = User.query.filter_by(id=current_user).first()
+    if not user:
+        return jsonify({"error": "用戶不存在"}), 403
+    # 計算日期範圍：前天開始到今天結束
+    now = datetime.now(timezone.utc)
+    start_of_range = (now - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_range = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    # 查詢範圍內的飲食日誌
+    diet_logs = DietLog.query.filter(
+        DietLog.user_id == user.id,
+        DietLog.log_date >= start_of_range.date(),
+        DietLog.log_date <= end_of_range.date()
+    ).all()
+    # 查詢範圍內的歷史訂單
+    records = Record.query.filter(
+        Record.user_id == user.id,
+        Record.timestamp >= start_of_range,
+        Record.timestamp <= end_of_range
+    ).all()
+    # 總結範圍內的營養攝取數據
+    total_carbs = total_protein = total_fat = total_calories = 0
+    # 加上日誌數據
+    for log in diet_logs:
+        total_carbs += log.carbs
+        total_protein += log.protein
+        total_fat += log.fat
+        total_calories += log.calories
+    # 加上歷史訂單的營養數據
+    for record in records:
+        food = Food.query.get(record.info_id)
+        if food:
+            total_carbs += food.carbo
+            total_protein += food.protein
+            total_fat += food.fat
+            total_calories += food.calories
+    # 定義每日營養建議值（假設建議值是按天計算，需乘以2）
+    recommended_intake = {
+        "carbs": 300 * 2,  # 克
+        "protein": 50 * 2,  # 克
+        "fat": 70 * 2,      # 克
+        "calories": 2000 * 2  # 千卡
+    }
+    # 計算缺口
+    deficits = {
+        "carbs": max(0, recommended_intake["carbs"] - total_carbs),
+        "protein": max(0, recommended_intake["protein"] - total_protein),
+        "fat": max(0, recommended_intake["fat"] - total_fat),
+        "calories": max(0, recommended_intake["calories"] - total_calories),
+    }
+    # 推薦食物
+    recommendations = []
+    if any(value > 0 for value in deficits.values()):  # 若有缺口則推薦
+        foods = Food.query.all()
+        for food in foods:
+            # 如果食物的營養值為 None，給它默認值（例如 0），或直接跳過
+            carbo = food.carbo or 0
+            protein = food.protein or 0
+            fat = food.fat or 0
+            calories = food.calories or 0
+            if (carbo >= deficits["carbs"] * 0.3 or
+                protein >= deficits["protein"] * 0.3 or
+                fat >= deficits["fat"] * 0.3 or
+                calories >= deficits["calories"] * 0.3):
+                recommendations.append({
+                    "id": food.id,
+                    "name": food.name,
+                    "restaurant_name": food.subcat.name,
+                    "carbs": food.carbo,
+                    "protein": food.protein,
+                    "fat": food.fat,
+                    "calories": food.calories,
+                    "img_url": food.img_url
+                })
+    return jsonify({
+        "range": {
+            "start": start_of_range.isoformat(),
+            "end": end_of_range.isoformat()
+        },
+        "totals": {
+            "carbs": total_carbs,
+            "protein": total_protein,
+            "fat": total_fat,
+            "calories": total_calories,
+        },
+        "deficits": deficits,
+        "recommendations": recommendations
+    }), 200
+
+
 
 
 if __name__ == '__main__':

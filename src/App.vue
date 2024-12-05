@@ -301,34 +301,7 @@
 </script>
 
 
-<style scoped>
-  :root {
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  @media (prefers-color-scheme: light) {
-    :root {
-      color: #213547;
-      background-color: #ffffff;
-    }
-  }
-  
-  body, html {
-    height: 100%;
-    margin: 0;
-    overflow: auto; 
-    background: lib;
-    background: linear-gradient(#1eb8a6, #fff) ;
-  }
-  
+<style scoped>  
   .root {
     display: flex;
     height: 100%;
@@ -371,7 +344,7 @@
   
   @media (max-width: 768px) {
     .sidebar {
-      width: 100%;
+      width: 30%;
       left: -100%;
     }
   
@@ -422,7 +395,7 @@
   nav ul li a {
     color: white;
     text-decoration: none;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 400;
     transition: color 0.3s;
   }
@@ -470,7 +443,48 @@
     text-align: center;
     margin: 20px 0;
   }
-  
+
+.auth-buttons button, .home-btn {
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  border: none;
+  color: #000000;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s ease;  /* 添加平滑的變化 */
+  margin: 0.5em; /* 讓按鈕之間有些間距 */
+}
+
+
+.auth-buttons button:hover, .home-btn:hover {
+  background-color: #fff; 
+  transform: translateY(-4px);  /* 按鈕向上浮動 */
+}
+
+
+.auth-buttons button:focus, .home-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);  
+}
+
+
+.auth-buttons {
+  display: flex;
+  justify-content: center; /* 中央對齊 */
+  gap: 1em;  /* 按鈕之間的間距 */
+}
+
+.home-btn {
+  background-color: #fff9f8;  
+  color: rgb(71, 44, 44);
+}
+
+.home-btn:hover {
+  background-color: #aaea80;  
+  transform: translateY(-4px);  
+}
+
   .restaurant-list {
     display: flex;
     overflow-x: auto;
@@ -543,6 +557,84 @@
     font-size: 1rem;
     color: #777;
     margin-bottom: 12px;
+  }
+
+  /* 模態框背景 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* 模態框樣式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 800px;
+    overflow-y: auto;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .menu-items {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .menu-item {
+    display: flex;
+    margin: 10px;
+    width: 48%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .menu-item img {
+    max-width: 120px;
+    margin-right: 15px;
+  }
+
+  .item-details {
+    flex-grow: 1;
+  }
+
+  .item-details h4 {
+    margin: 0;
+  }
+
+  .price {
+    font-size: 18px;
+    font-weight: bold;
+    color: green;
   }
 
   .rating {
@@ -630,29 +722,36 @@
   text-align: right;
 }
 @media (max-width: 768px) {
-    .sidebar {
-      width: 100%;
-      position: relative;
-      transform: translateX(0);
-    }
-
-    .main-content {
-      margin-left: 0;
-      padding: 10px;
-    }
-
-    .restaurant-slider {
-      flex-direction: column;
-    }
-
-    .restaurant-item {
-      min-width: 100%;
-      height: auto;
-      margin-bottom: 10px;
-    }
-
-    .food-name {
-      font-size: 14px;
-    }
+  .sidebar {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: -100%; /* 初始時隱藏側邊欄 */
+    transform: translateX(0);
   }
-  </style>
+
+  .sidebar.active {
+    left: 0; /* 顯示側邊欄時從左側滑出 */
+  }
+
+  .main-content {
+    margin-left: 0; /* 沒有側邊欄時，讓內容區塊占滿整個頁面 */
+    padding: 10px;
+  }
+
+  .restaurant-slider {
+    flex-direction: column;
+  }
+
+  .restaurant-item {
+    min-width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+  }
+
+  .food-name {
+    font-size: 14px;
+  }
+}
+
+</style>

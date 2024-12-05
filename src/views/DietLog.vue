@@ -6,17 +6,18 @@
       <h2>{{ currentDate }}</h2>
       <div class="calories">
         <h3>營養攝取概覽</h3>
-        <div v-for="(nutrient, index) in nutrients" :key="index">
-          <p>{{ nutrient.label }}: {{ nutrient.current }}g / {{ nutrient.recommended }}g</p>
+        <div class="nutrient-overview">
+          <div class="nutrient-item" v-for="(nutrient, index) in nutrients" :key="index">
+            <p>{{ nutrient.label }}: {{ nutrient.current }}g / {{ nutrient.recommended }}g</p>
+          </div>
         </div>
       </div>
     </header>
-
     <div class="food-categories">
       <div v-for="(category, index) in foodCategories" :key="index" class="category">
         <h3>{{ category.label }}</h3>
         <div class="category-info">
-          <span>攝取：{{ category.current }} / 建議：{{ category.recommended }}</span>
+          <span>建議：{{ category.recommended }} 份</span>
           <button class="details-button" @click="showDetails(category)">詳細資訊</button>
         </div>
       </div>
@@ -223,13 +224,14 @@
     },
     async addFood() {
       const token = localStorage.getItem("token");
-      console.log("Token from localStorage: ", token);  // 調試，檢查 token 是否正確讀取
-  
+      console.log("Token from localStorage: ", token);
+
       if (!token) {
         alert("請先登入以使用日誌");
         this.$router.push("/login");
         return;
       }
+
       // 發送新增食物請求
       const response = await axios.post(
         `/api/log`,
@@ -239,12 +241,16 @@
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log("API response: ", response);
+
+      console.log("API response: ", response)
+
       // 更新當天的食物清單
-      this.loadDailyLog();
+      await this.loadDailyLog(); // 確保食物列表更新
 
       this.closeAddFoodModal();
     },
+
+
     showDetails(food) {
       this.selectedCategory = food;
       this.showModal = true;
@@ -262,114 +268,138 @@
   
 
 <style scoped>
+/* 整體樣式 */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f4f4; /* 淺灰背景 */
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+/* 日誌外框樣式 */
 .diet-log {
   padding: 20px;
-  font-family: 'Arial', sans-serif;
-  background-color: #adcff0;
+  background-color: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   max-width: 600px;
-  margin: auto;
+  margin: 30px auto;
 }
+
+/* 標題樣式 */
 header {
   text-align: center;
   margin-bottom: 20px;
 }
+
 h1 {
-  font-size: 2.5em;
-  color: #2c3e50;
-}
-h2 {
-  font-size: 1.5em;
+  font-size: 2.4em;
   color: #34495e;
-}
-.calories {
-  font-size: 1.2em;
-  margin: 10px 0;
-  color: #008f3c;
+  font-weight: bold;
 }
 
+h2 {
+  font-size: 1.6em;
+  color: #555555;
+}
+
+/* 食物分類區塊 */
 .food-categories {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
   margin: 20px 0;
 }
+
 .category {
-  background-color: #ffffff;
+  background-color: #eaeaea;
   border-radius: 10px;
   padding: 15px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
 }
+
+.category:hover {
+  transform: translateY(-5px);
+}
+
 .category h3 {
-  color: #2980b9;
+  color: #3498db;
+  font-size: 1.2em;
   margin-bottom: 10px;
 }
-.category-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.details-button {
+
+/* 按鈕樣式 */
+.details-button, .add-food-button {
   background-color: #3498db;
-  color: white;
+  color: #ffffff;
   border: none;
   border-radius: 5px;
   padding: 10px 15px;
   cursor: pointer;
+  font-size: 1em;
   transition: background-color 0.3s;
+  margin: 10px;
 }
-.details-button:hover {
-  background-color: #2980b9;
+
+.details-button:hover,
+.add-food-button:hover {
+  background-color: #217dbb;
 }
+
 .add-food-button {
   display: block;
-  margin: auto;
-  padding: 10px 20px;
-  font-size: 1.5em;
-  background-color: #000000;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  margin: 20px auto;
+  font-size: 1.2em;
 }
-.add-food-button:hover {
-  background-color: #d79a95;
-}
+
+/* 模態框樣式 */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
+
 .modal-content {
-  background-color: rgb(159, 241, 143);
+  background-color: #ffffff;
   padding: 20px;
-  border-radius: 10px;
-  width: 400px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
+
 .close {
   position: absolute;
   top: 10px;
-  right: 15px;
+  right: 10px;
+  font-size: 18px;
+  color: #333333;
   cursor: pointer;
-  font-size: 20px;
-  color: #140807;
 }
+
 .close:hover {
-  color: #3c3433;
+  color: #e74c3c;
 }
+
+/* 表單樣式 */
 label {
+  font-size: 1em;
+  color: #555555;
+  margin-top: 10px;
   display: block;
-  margin: 10px 0 5px;
-  color: #2c3e50;
 }
+
 input[type="text"],
 input[type="number"],
 select {
@@ -377,29 +407,42 @@ select {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
-input[type="text"]:focus,
-input[type="number"]:focus,
-select:focus {
-  border-color: #3498db;
-}
+
 button {
-  padding: 10px;
-  border-radius: 5px;
+  background-color: #2ecc71;
+  color: white;
   border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
   cursor: pointer;
   font-size: 1em;
+  transition: background-color 0.3s;
 }
-ul {
-  list-style-type: none;
-  padding: 0;
+
+button:hover {
+  background-color: #27ae60;
 }
-ul li {
-  margin: 10px 0;
-  background-color: #f9f9f9;
+
+/* 營養攝取概覽 */
+.nutrient-overview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.nutrient-item {
+  background-color: #f8f9fa;
+  border-radius: 8px;
   padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
+
+.nutrient-item p {
+  font-size: 1em;
+  color: #34495e;
+}
+
 </style>
