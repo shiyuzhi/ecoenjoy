@@ -3,15 +3,11 @@
     <h2>外送</h2>
     <select v-model="selectedRestaurant" @change="fetchMenu" class="restaurant-select">
       <option disabled value="">選擇餐廳</option>
-      <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">
-        {{ restaurant.name }}
-      </option>
+      <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">{{ restaurant.name }}</option>
     </select>
 
     <div v-if="menu.length && !loadingMenu" class="menu-items">
-      <button @click="viewStore(selectedRestaurant)" class="view-store-button">
-        餐廳資訊
-      </button>
+      <button @click="viewStore(selectedRestaurant)" class="view-store-button">餐廳資訊</button>
       <h3>菜單</h3>
       <div v-for="item in menu" :key="item.id" class="menu-item">
         <img :src="item.img_url" alt="菜品圖片" class="menu-image" />
@@ -19,45 +15,63 @@
           <h4>{{ item.name }}</h4>
           <p>{{ item.description }}</p>
           <span class="price">{{ Math.round(item.price) }} 元</span>
-          <!-- 查看評論按鈕 -->
           <button @click="viewComments(item)" class="view-comments-button">查看評論</button>
-          <!-- 加入購物車的按鈕 -->
           <button @click="addToCart(item)" class="add-to-cart-button">加入購物車</button>
         </div>
       </div>
     </div>
     <p v-else>請選擇一間餐廳以查看菜單。</p>
 
-    <!-- 評論模態框 -->
     <div v-if="showCommentsModal" class="comments-modal">
       <div class="modal-content">
         <h3>{{ selectedMenuItem.name }} 的評論</h3>
-
-        <!-- 顯示「目前還沒評論」訊息 -->
         <div v-if="selectedMenuItem.comments.length === 0" class="no-comments-message">
           <p>目前還沒評論喔！來第一個留言吧！</p>
         </div>
-
-        <!-- 顯示評論內容 -->
         <div v-else class="comments-container">
           <ul>
             <li v-for="(comment, index) in selectedMenuItem.comments" :key="index" class="comment-card">
-              <p class="comment-user">
-                <strong>{{ comment.user.username }}</strong>: 
-                <span class="comment-text">{{ comment.data }}</span>
-              </p>
-              <div class="comment-meta">
-                <span>👍 {{ comment.likes }} 喜歡</span> | 
-                <span>💬 {{ comment.replies }} 回覆</span>
-              </div>
+              <p class="comment-user"><strong>{{ comment.user.username }}</strong>: <span class="comment-text">{{ comment.data }}</span></p>
+              <div class="comment-meta"><span>👍 {{ comment.likes }} 喜歡</span> | <span>💬 {{ comment.replies }} 回覆</span></div>
             </li>
           </ul>
         </div>
-
         <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
       </div>
     </div>
 
+    <div class="order-summary" v-if="cart.length">
+      <h3>訂單總覽</h3>
+      <div class="cart-item" v-for="(item, index) in cart" :key="index">
+        <span>{{ item.name }} - {{ item.quantity }} x {{ Math.round(item.price) }} 元</span>
+        <button @click="removeFromCart(index)" class="remove-button">移除</button>
+      </div>
+      <p class="total-price">總價: {{ totalPrice }} 元</p>
+      <h4>送餐資訊確認</h4>
+      <div class="form-group">
+        <label for="delivery-name">取餐人姓名：</label>
+        <input type="text" id="delivery-name" v-model="deliveryName" placeholder="輸入姓名" required />
+      </div>
+      <div class="form-group">
+        <label for="delivery-address">外送地址：</label>
+        <input type="text" id="delivery-address" v-model="deliveryAddress" placeholder="輸入外送地址" required />
+      </div>
+      <div class="form-group">
+        <label for="delivery-phone">電話：</label>
+        <input type="text" id="delivery-phone" v-model="deliveryPhone" placeholder="輸入電話" required />
+      </div>
+      <div class="payment-method">
+        <button @click="paymentMethod = 'cash'" :class="{ 'active': paymentMethod === 'cash' }">現金</button>
+        <button @click="paymentMethod = 'credit_card'" :class="{ 'active': paymentMethod === 'credit_card' }">信用卡</button>
+      </div>
+      <div v-if="paymentMethod === 'credit_card'" class="form-group">
+        <label for="credit-card-number">信用卡號：</label>
+        <input type="text" id="credit-card-number" v-model="creditCardNumber" placeholder="輸入信用卡號" />
+        <span v-if="!isCardValid" class="error-message">信用卡號格式不正確</span>
+      </div>
+      <button @click="checkout" :disabled="isCheckoutDisabled" class="checkout-button">結帳</button>
+    </div>
+    <p v-else>尚未添加任何商品到購物車。</p>
   </div>
 </template>
 

@@ -2,10 +2,13 @@
   <div class="diet-log">
     <header>
       <h1>飲食日誌</h1>
-      <input type="date" v-model="currentDate" @change="loadCurrentDateRecords()" />
+      <input type="date" v-model="currentDate" @change="loadDailyLog()" />
       <h2>{{ currentDate }}</h2>
       <div class="calories">
-        <p>已攝取：{{ totalCalories }} / {{ dailyGoal }} 卡路里</p>
+        <h3>營養攝取概覽</h3>
+        <div v-for="(nutrient, index) in nutrients" :key="index">
+          <p>{{ nutrient.label }}: {{ nutrient.current }}g / {{ nutrient.recommended }}g</p>
+        </div>
       </div>
     </header>
 
@@ -19,12 +22,13 @@
       </div>
     </div>
 
-    <button class="add-food-button" @click="openAddFoodModal">+ 添加食物</button>
+    <!-- 僅當日期為今天時顯示按鈕 -->
+    <button v-if="isToday" class="add-food-button" @click="openAddFoodModal">+ 添加食物</button>
 
     <h3>已添加食物:</h3>
     <ul>
-      <li v-for="food in getCurrentDateFoods()" :key="food.name">
-        {{ food.name }} - {{ food.calories }} 卡路里 (類別: {{ food.category }})
+      <li v-for="food in foods" :key="food.name">
+        {{ food.name }} ({{ food.category }}) - 碳水: {{ food.carbs }}g，蛋白質: {{ food.protein }}g，脂肪: {{ food.fat }}g，熱量: {{ food.calories }} kcal
       </li>
     </ul>
 
@@ -45,8 +49,18 @@
             </option>
           </select>
 
-          <label for="foodCalories">卡路里:</label>
+          <label for="foodCarbs">碳水化合物 (g):</label>
+          <input type="number" id="foodCarbs" v-model.number="newFood.carbs" required />
+
+          <label for="foodProtein">蛋白質 (g):</label>
+          <input type="number" id="foodProtein" v-model.number="newFood.protein" required />
+
+          <label for="foodFat">脂肪 (g):</label>
+          <input type="number" id="foodFat" v-model.number="newFood.fat" required />
+
+          <label for="foodCalories">熱量 (kcal):</label>
           <input type="number" id="foodCalories" v-model.number="newFood.calories" required />
+
 
           <button type="submit">添加</button>
         </form>
@@ -72,15 +86,28 @@
 </template>
 
 <script>
+  import axios from 'axios';
+
   export default {
   data() {
+    const today = new Date();
+    const utcDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    const formattedToday = utcDate.toISOString().slice(0, 10);  // 轉換為 'YYYY-MM-DD'
+    console.log("formattedToday (Front-end UTC Date):", formattedToday);  // 除錯輸出
     return {
-      currentDate: new Date().toISOString().substr(0, 10), // 以 YYYY-MM-DD 格式初始化當前日期
+      currentDate: formattedToday, // 以 YYYY-MM-DD 格式初始化當前日期
+      todayDate: formattedToday,
       records: {}, 
       totalCalories: 0, 
       dailyGoal: 2000, 
+      nutrients: [
+        { label: "碳水化合物", key: "carbs", current: 0, recommended: 300 },
+        { label: "蛋白質", key: "protein", current: 0, recommended: 75 },
+        { label: "脂肪", key: "fat", current: 0, recommended: 70 },
+        { label: "熱量", key: "calories", current: 0, recommended: 2000 }
+      ],
       foodLog: {},
-
+      foods: [],
       foodCategories: [
         {
           label: '水果',
@@ -155,78 +182,80 @@
       newFood: {
         name: '',
         category: '',
+        carbs: 0,
+        protein: 0,
+        fat: 0,
         calories: 0
       }
     };
   },
+  computed: {
+    isToday() {
+      return this.currentDate === this.todayDate;
+    }
+  },
   methods: {
-    loadCurrentDateRecords() {
-      const recordsForDate = this.records[this.currentDate];
-      if (recordsForDate) {
-        this.totalCalories = recordsForDate.totalCalories;
-        recordsForDate.categories.forEach(cat => {
-          const category = this.foodCategories.find(c => c.label === cat.label);
-          if (category) {
-            category.current = cat.current;
-          }
+    async loadDailyLog() {
+      try {
+        const response = await axios.get(`/api/log/${this.currentDate}`);
+        const log = response.data;
+
+        this.nutrients.forEach(nutrient => {
+          nutrient.current = log[nutrient.key] || 0;
         });
-      } else {
-        this.totalCalories = 0;
-        this.foodCategories.forEach(cat => {
-          cat.current = 0;
-        });
+
+        this.foods = log.foods || [];
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          alert("認證失敗，請重新登入！");
+          this.$router.push("/login");
+        } else {
+          console.error("Error loading daily log:", error);
+        }
       }
-    },
-    // 獲取當前日期的食物
-    getCurrentDateFoods() {
-      const recordsForDate = this.records[this.currentDate];
-      return recordsForDate ? recordsForDate.foods : []; // 直接返回當前日期的食物
     },
     openAddFoodModal() {
       this.showAddFoodModal = true;
     },
     closeAddFoodModal() {
       this.showAddFoodModal = false;
-      this.resetNewFood();
+      this.newFood = { name: '', category: '', carbs: 0, protein: 0, fat: 0, calories: 0 };
     },
-    addFood() {
-      const category = this.foodCategories.find(cat => cat.label === this.newFood.category);
-      if (category) {
-        category.current++;
-        this.totalCalories += this.newFood.calories; // 更新總卡路里
-        
-        // 更新紀錄
-        if (!this.records[this.currentDate]) {
-          this.records[this.currentDate] = {
-            totalCalories: 0,
-            categories: this.foodCategories.map(cat => ({ label: cat.label, current: 0 })),
-            foods: [] // 確保有一個 foods 陣列來存儲食物
-          };
-        }
-        
-        this.records[this.currentDate].totalCalories += this.newFood.calories;
-        this.records[this.currentDate].foods.push({ ...this.newFood }); // 將新食物添加到當前日期的 foods 陣列中
+    async addFood() {
+      const token = localStorage.getItem("token");
+      console.log("Token from localStorage: ", token);  // 調試，檢查 token 是否正確讀取
+  
+      if (!token) {
+        alert("請先登入以使用日誌");
+        this.$router.push("/login");
+        return;
       }
+      // 發送新增食物請求
+      const response = await axios.post(
+        `/api/log`,
+        {
+          log_date: this.currentDate, // 將日期加入請求主體
+          foods: [this.newFood],
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("API response: ", response);
+      // 更新當天的食物清單
+      this.loadDailyLog();
+
       this.closeAddFoodModal();
     },
-    resetNewFood() {
-      this.newFood = {
-        name: '',
-        category: '',
-        calories: 0
-      };
-    },
-    showDetails(category) {
-      this.selectedCategory = category;
+    showDetails(food) {
+      this.selectedCategory = food;
       this.showModal = true;
     },
     closeModal() {
       this.showModal = false;
+      this.selectedFood = {};
     }
   },
-
   mounted() {
-    this.loadCurrentDateRecords();
+    this.loadDailyLog();
   }
 };
 </script>

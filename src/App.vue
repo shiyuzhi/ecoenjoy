@@ -301,7 +301,6 @@
 </script>
 
 
-
 <style scoped>
   :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -326,6 +325,8 @@
     height: 100%;
     margin: 0;
     overflow: auto; 
+    background: lib;
+    background: linear-gradient(#1eb8a6, #fff) ;
   }
   
   .root {
@@ -333,6 +334,7 @@
     height: 100%;
     width: 100%;
     flex-direction: column; 
+    
   }
   
   .menu-icon {
@@ -349,7 +351,7 @@
   }
   
   .sidebar {
-    width: 400px;
+    width: 300px;
     background-color: #8cae68;
     color: white;
     display: flex;
@@ -653,4 +655,4 @@
       font-size: 14px;
     }
   }
-</style>
+  </style>

@@ -74,6 +74,9 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
     
+     #diet_logs = db.relationship('DietLog', backref='user', lazy=True)
+
+    
 # 設置日誌
 logging.basicConfig(level=logging.DEBUG)
 
@@ -147,6 +150,18 @@ class Record(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     #foods = db.relationship("Food", back_populates="record")
     food = db.relationship('Food')
+
+# 飲食日誌
+class DietLog(db.Model):
+    __tablename__ = 'diet_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    log_date = db.Column(db.String(10), nullable=False)
+    carbs = db.Column(db.Float, default=0)
+    protein = db.Column(db.Float, default=0)
+    fat = db.Column(db.Float, default=0)
+    calories = db.Column(db.Float, default=0)
+    foods = db.Column(db.JSON, nullable=False, default=list)  # 儲存每日的食物清單
 
 # 檢查 token 是否在黑名單中
 @jwt.token_in_blocklist_loader
@@ -721,6 +736,82 @@ def get_history():
             "calories": total_calories,
         }
     }), 200
+
+@app.route('/api/log/<date>', methods=['GET'])
+@jwt_required()
+def get_daily_log(date):
+    # 獲取當前用戶身份（若為訪客則返回 None）
+    current_user = get_jwt_identity()
+    diet_log = DietLog.query.filter_by(user_id=current_user, log_date=date).first()
+    
+    if not diet_log:
+        return jsonify({
+            "log_date": date,
+            "carbs": 0,
+            "protein": 0,
+            "fat": 0,
+            "calories": 0,
+            "foods": []
+        })
+    
+    return jsonify({
+        "log_date": diet_log.log_date,
+        "carbs": diet_log.carbs,
+        "protein": diet_log.protein,
+        "fat": diet_log.fat,
+        "calories": diet_log.calories,
+        "foods": diet_log.foods
+    })
+
+# 更新每日紀錄（僅允許當天）
+@app.route('/api/log', methods=['POST'])
+@jwt_required()
+def update_daily_log():
+    data = request.json
+    # 獲取當前用戶身份（若為訪客則返回 None）
+    current_user = get_jwt_identity()
+    log_date = data.get("log_date")  # 獲取log_date
+    print(log_date)
+    foods = data.get("foods", [])
+    print(foods)
+    # 僅允許當天更新
+    # if log_date != today_date:
+    #     return jsonify({'error': 'Only today\'s record can be updated.'}), 403
+    # 查找當天日誌，若不存在則創建
+    log = DietLog.query.filter_by(user_id=current_user, log_date=log_date).first()
+    if not log:
+        # 如果日誌不存在，初始化日誌
+        log = DietLog(
+            user_id=current_user,
+            log_date=log_date,
+            carbs=0,
+            protein=0,
+            fat=0,
+            calories=0,
+            foods=[]
+        )
+        db.session.add(log)
+    # 確保 log 的營養素字段是數值型
+    log.carbs = log.carbs or 0
+    log.protein = log.protein or 0
+    log.fat = log.fat or 0
+    log.calories = log.calories or 0
+    # 合併新舊食物列表
+    existing_foods = log.foods or []  # 獲取現有食物列表
+    updated_foods = existing_foods + foods  # 合併現有和新添加的食物
+    print("Updated foods list:", updated_foods)
+    for food in foods:
+        # 更新日誌中的營養素數值
+        log.carbs += int(food.get("carbs", 0))
+        log.protein += int(food.get("protein", 0))
+        log.fat += int(food.get("fat", 0))
+        log.calories += int(food.get("calories", 0))
+        #log.foods.append(food)  # 將新的食物字典添加到列表
+    # 更新 foods 欄位
+    log.foods = updated_foods
+    db.session.commit()
+    return jsonify({"message": "Food added to log successfully"}), 200
+
 
 if __name__ == '__main__':
     with app.app_context():
