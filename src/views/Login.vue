@@ -11,13 +11,17 @@
         <input type="password" v-model="password" id="password" required autocomplete="current-password" />
       </div>
       <div class="form-footer">
-        <div class="remember-me">
-          <input type="checkbox" id="remember" v-model="rememberMe" />
-          <label for="remember">記住我?</label>
-        </div>
-        <a href="#" class="forgot-password">忘記密碼?</a>
-      </div>
-      <button type="submit" class="submit-button" @click="getUserData">SIGN IN</button>
+        <a href="#" class="forgot-password" @click="handleForgotPassword">忘記密碼?</a>
+      </div>      
+
+      <!-- 忘記密碼表單 -->
+      <div v-if="isForgotPasswordVisible">
+        <input v-model="email" type="email" placeholder="請輸入您的電子郵件" />
+        <button @click="submitForgotPassword">提交</button>
+        <button @click="cancelForgotPassword">取消</button>
+      </div>      
+
+      <button type="submit" class="submit-button">SIGN IN</button>
       <div class="social-login">
         <p>使用社交媒體登入</p>
         <div class="social-buttons">
@@ -43,12 +47,37 @@
       return {
         username: '',
         password: '',
-        message: "",
-        rememberMe: false, // 記住我選項
         user: null, // 用戶資料
+        isForgotPasswordVisible: false, // 控制是否顯示忘記密碼表單
+        message: '', // 訊息顯示
       };
     },
     methods: {
+       // 顯示忘記密碼表單
+       handleForgotPassword() {
+        this.isForgotPasswordVisible = true;
+      },
+
+      // 取消忘記密碼
+      cancelForgotPassword() {
+        this.isForgotPasswordVisible = false;
+      },
+
+      // 提交忘記密碼的電子郵件
+      
+       // 提交忘記密碼的電子郵件
+       submitForgotPassword() {
+        if (!this.email) {
+          alert('請輸入電子郵件地址！');
+          return;
+        }
+        
+        alert(`重設密碼的郵件已發送到 ${this.email}，請查收您的郵箱。`);
+        this.isForgotPasswordVisible = false;
+      },
+
+
+      // 登入
       async handleLogin() {
         try {
           const response = await axios.post("http://127.0.0.1:5000/login", {
@@ -119,70 +148,102 @@
 </script>
   
 <style scoped>
+  /* 登入容器 */
   .login-container {
-    width: 350px;
-    margin: 50px auto;
-    background-color: #cfeed0;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 4px 15px rgba(52, 30, 30, 0.2);
+    width: 400px;
+    margin: 80px auto;
+    background: linear-gradient(135deg, #a2dff7, #ffecb3);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
   }
   
+  /* 表單標題 */
   .form-title {
     text-align: center;
-    color: #00796b;
-    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-transform: uppercase;
   }
-  
+
   .login-form {
     display: flex;
     flex-direction: column;
   }
   
+  /* 單個表單項 */
   .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
   }
   
+
   .form-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
+    font-size: 1rem;
+    color: #555;
+    font-weight: 500;
+    margin-bottom: 8px;
   }
   
+
   .form-group input {
-    padding: 10px;
-    border: 1px solid #5b3a3a;
+    padding: 12px;
+    border: 1px solid #ccc;
     border-radius: 8px;
+    width: 100%;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+
+  .form-group input:focus {
+    border-color: #25a294;
+    box-shadow: 0 0 8px rgba(37, 162, 148, 0.2);
   }
   
   .form-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .remember-me {
-    display: flex;
-    align-items: center;
-  }
-  
-  .forgot-password {
-    color: #00796b;
-    text-decoration: none;
-    font-size: 0.9em;
-  }
-  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+
+.remember-me label {
+  color: black;  /* 設定「記住我」的文字顏色為黑色 */
+}
+
+.forgot-password {
+  color: #00796b;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+  color: #004d40;
+  text-decoration: underline;
+}
+
+  /* 提交按鈕 */
   .submit-button {
-    padding: 12px;
+    padding: 14px;
     background-color: #25a294;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
+    font-size: 1.1rem;
     cursor: pointer;
-    font-size: 1em;
+    transition: background-color 0.3s ease;
+    width: 100%;
   }
   
   .submit-button:hover {
-    background-color: #004d40;
+    background-color: #00796b;
   }
   
   .social-login {
@@ -197,31 +258,43 @@
   }
   
   .social-button {
-    margin: 0 5px;
-    padding: 10px;
+    margin: 0 10px;
+    padding: 12px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 25px;
     cursor: pointer;
     display: flex;
     align-items: center;
+    font-size: 1rem;
+    transition: transform 0.3s ease;
   }
   
+  /* 社交按鈕懸停效果 */
+  .social-button:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Google登入按鈕 */
   .google-button {
     background-color: #db4437;
     color: white;
   }
   
+  /* Facebook登入按鈕 */
   .fb-button {
     background-color: #4267b2;
     color: white;
   }
   
+
   .line-button {
     background-color: #00c300;
     color: white;
   }
   
+  
   .social-icon {
-    margin-right: 5px;
+    margin-right: 8px;
   }
-</style>
+  </style>
+  

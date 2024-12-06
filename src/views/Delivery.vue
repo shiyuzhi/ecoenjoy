@@ -3,85 +3,78 @@
     <h2>外送</h2>
     <select v-model="selectedRestaurant" @change="fetchMenu" class="restaurant-select">
       <option disabled value="">選擇餐廳</option>
-      <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">
-        {{ restaurant.name }}
-      </option>
+      <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">{{ restaurant.name }}</option>
     </select>
 
     <div v-if="menu.length && !loadingMenu" class="menu-items">
+      <button @click="viewStore(selectedRestaurant)" class="view-store-button">餐廳資訊</button>
       <h3>菜單</h3>
       <div v-for="item in menu" :key="item.id" class="menu-item">
         <img :src="item.img_url" alt="菜品圖片" class="menu-image" />
         <div class="item-details">
           <h4>{{ item.name }}</h4>
           <p>{{ item.description }}</p>
-          <span class="price">{{ item.price }} 元</span>
-
-          <!-- 加入購物車的按鈕 -->
+          <span class="price">{{ Math.round(item.price) }} 元</span>
+          <button @click="viewComments(item)" class="view-comments-button">查看評論</button>
           <button @click="addToCart(item)" class="add-to-cart-button">加入購物車</button>
-          
-            <!-- 顯示評論區 -->
-          <div v-if="item.reviews && item.reviews.length">
-            <h5>評論</h5>
-            <div v-for="review in item.reviews" :key="review.id" class="review">
-              <p><strong>{{ review.user_name }}:</strong> {{ review.content }}</p>
-              <div class="rating">
-                <span v-for="n in review.rating" :key="n">⭐</span> 
-              </div>
-            </div>
-            <button @click="toggleShowAllReviews(item)" v-if="!item.showAllReviews">
-              查看更多評論
-            </button>
-            <div v-if="item.showAllReviews">
-              <!-- 顯示更多評論 -->
-              <button @click="toggleShowAllReviews(item)">收起評論</button>
-            </div>
-          </div>
-          <!-- 顯示寫評論的功能 -->
-          <div v-if="isLoggedIn">
-            <button @click="openReviewModal(item)">寫評論</button>
-          </div>
         </div>
       </div>
     </div>
     <p v-else>請選擇一間餐廳以查看菜單。</p>
 
+    <div v-if="showCommentsModal" class="comments-modal">
+      <div class="modal-content">
+        <h3>{{ selectedMenuItem.name }} 的評論</h3>
+        <div v-if="selectedMenuItem.comments.length === 0" class="no-comments-message">
+          <p>目前還沒評論喔！來第一個留言吧！</p>
+        </div>
+        <div v-else class="comments-container">
+          <ul>
+            <li v-for="(comment, index) in selectedMenuItem.comments" :key="index" class="comment-card">
+              <p class="comment-user"><strong>{{ comment.user.username }}</strong>: <span class="comment-text">{{ comment.data }}</span></p>
+              <div class="comment-meta"><span>👍 {{ comment.likes }} 喜歡</span> | <span>💬 {{ comment.replies }} 回覆</span></div>
+            </li>
+          </ul>
+        </div>
+        <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
+      </div>
+    </div>
+
     <div class="order-summary" v-if="cart.length">
-       <!-- 餐廳資訊按鈕 -->
-       <router-link :to="`/store/${selectedRestaurantId}`">
-        <button class="view-store-button">
-          餐廳資訊
-        </button>
-       </router-link>
       <h3>訂單總覽</h3>
       <div class="cart-item" v-for="(item, index) in cart" :key="index">
-        <span>{{ item.name }} - {{ item.quantity }} x {{ item.price }} 元</span>
+        <span>{{ item.name }} - {{ item.quantity }} x {{ Math.round(item.price) }} 元</span>
         <button @click="removeFromCart(index)" class="remove-button">移除</button>
       </div>
       <p class="total-price">總價: {{ totalPrice }} 元</p>
-      <!-- 付款方式選擇 -->
-      <div class="payment-method">
-        <label>
-          <input type="radio" v-model="paymentMethod" value="cash"> 現金
-        </label>
-        <label>
-          <input type="radio" v-model="paymentMethod" value="credit_card"> 信用卡
-        </label>
+      <h4>送餐資訊確認</h4>
+      <div class="form-group">
+        <label for="delivery-name">取餐人姓名：</label>
+        <input type="text" id="delivery-name" v-model="deliveryName" placeholder="輸入姓名" required />
       </div>
-
-
-      <!-- 信用卡資料 -->
-      <div v-if="paymentMethod === 'credit_card'">
+      <div class="form-group">
+        <label for="delivery-address">外送地址：</label>
+        <input type="text" id="delivery-address" v-model="deliveryAddress" placeholder="輸入外送地址" required />
+      </div>
+      <div class="form-group">
+        <label for="delivery-phone">電話：</label>
+        <input type="text" id="delivery-phone" v-model="deliveryPhone" placeholder="輸入電話" required />
+      </div>
+      <div class="payment-method">
+        <button @click="paymentMethod = 'cash'" :class="{ 'active': paymentMethod === 'cash' }">現金</button>
+        <button @click="paymentMethod = 'credit_card'" :class="{ 'active': paymentMethod === 'credit_card' }">信用卡</button>
+      </div>
+      <div v-if="paymentMethod === 'credit_card'" class="form-group">
         <label for="credit-card-number">信用卡號：</label>
         <input type="text" id="credit-card-number" v-model="creditCardNumber" placeholder="輸入信用卡號" />
         <span v-if="!isCardValid" class="error-message">信用卡號格式不正確</span>
       </div>
-    
       <button @click="checkout" :disabled="isCheckoutDisabled" class="checkout-button">結帳</button>
     </div>
     <p v-else>尚未添加任何商品到購物車。</p>
   </div>
 </template>
+
 
 <script>
   import axios from "axios";
@@ -103,6 +96,11 @@
         isLoggedIn: false, // 是否已登入
         token: null, // 儲存 JWT token（若登入）
         userId: null, // 用戶 ID (可從登入時設置)
+        showCommentsModal: false, // 控制評論模態框顯示
+        selectedMenuItem: null, // 當前選擇的菜品
+        showCommentsModal: false, // 控制評論模態框顯示
+        selectedMenuItem: null, // 當前選擇的菜品
+        newComment: '', // 儲存用戶新寫的評論
       };
     },
 
@@ -110,8 +108,7 @@
       // 嘗試從 localStorage 載入登入狀態
       const userToken = localStorage.getItem("token");
       const userId = localStorage.getItem("id");
-      console.log(userToken)
-      console.log(userId)
+
       if (userToken && userId) {
         this.isLoggedIn = true;
         this.token = userToken;
@@ -143,8 +140,128 @@
     },
 
     methods: {
-      viewStore() {
-        this.$router.push(`/store/${this.selectedRestaurantId}`);
+      // 查看評論
+      async viewComments(item) {
+        this.selectedMenuItem = { ...item, comments: [] }; // 初始化當前菜品數據
+
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/api/comments/store/${this.selectedMenuItem.id}`);
+          if (response.status === 200) {
+            // 如果返回的評論是空數組
+            if (response.data.length === 0) {
+              this.selectedMenuItem.comments = []; // 空評論
+              this.noCommentsMessage = "目前還沒評論喔！來第一個留言吧！";
+            } else {
+              this.selectedMenuItem.comments = response.data; // 設置評論數據
+              this.noCommentsMessage = ""; // 清除消息
+            }
+          } else {
+            console.error("評論加載失敗:", response.data.message);
+            this.noCommentsMessage = "無法加載評論，請稍後再試。";
+          }
+        } catch (error) {
+          console.error("獲取評論時發生錯誤:", error.message || error);
+          this.noCommentsMessage = "獲取評論時發生錯誤。";
+        } finally {
+          this.showCommentsModal = true; // 顯示模態框
+        }
+      },
+
+      // 提交新評論
+      async submitComment() {
+      if (!this.isLoggedIn) {
+        alert("請先登入才能提交評論！");
+        return; // 用戶未登入，阻止評論提交
+      }
+
+      if (!this.newComment.trim()) {
+        alert("請輸入評論內容！");
+        return;
+      }
+
+    const commentData = {
+      user_id: this.userId, // 用戶 ID
+      menu_item_id: this.selectedMenuItem.id, // 當前菜品 ID
+      comment: this.newComment, // 用戶輸入的評論內容
+    };
+
+    try {
+      const response = await axios.post("http://127.0.0.1:5000/api/comments", commentData, {
+        headers: { Authorization: `Bearer ${this.token}` }
+      });
+
+      if (response.status === 200) {
+        this.selectedMenuItem.comments.push(response.data); // 更新菜品的評論
+        this.newComment = ''; // 清空評論框
+      } else {
+        console.error("評論提交失敗:", response.data.message);
+      }
+    } catch (error) {
+      console.error("提交評論時發生錯誤:", error.message || error);
+    }
+  },
+
+      // 編輯評論（僅限登入用戶）
+      async editComment(comment) {
+        if (!this.isLoggedIn) {
+          alert("請先登入才能編輯評論！");
+          return; // 用戶未登入，阻止編輯
+        }
+
+        // 這裡可以加入編輯邏輯，根據需要提供編輯功能
+        // 例如，彈出編輯框，並提交修改後的評論
+        const editedComment = prompt("請編輯您的評論：", comment.comment);
+        if (editedComment !== null && editedComment.trim() !== '') {
+          try {
+            const response = await axios.put(`http://127.0.0.1:5000/api/comments/${comment.id}`, {
+              comment: editedComment
+            }, {
+              headers: { Authorization: `Bearer ${this.token}` }
+            });
+
+            if (response.status === 200) {
+              comment.comment = editedComment; // 更新評論內容
+            } else {
+              console.error("評論編輯失敗:", response.data.message);
+            }
+          } catch (error) {
+            console.error("編輯評論時發生錯誤:", error.message || error);
+          }
+        }
+      },
+
+      // 刪除評論（僅限登入用戶）
+      async deleteComment(comment) {
+        if (!this.isLoggedIn) {
+          alert("請先登入才能刪除評論！");
+          return; // 用戶未登入，阻止刪除
+        }
+
+        const confirmDelete = confirm("您確定要刪除此評論嗎？");
+        if (confirmDelete) {
+          try {
+            const response = await axios.delete(`http://127.0.0.1:5000/api/comments/${comment.id}`, {
+              headers: { Authorization: `Bearer ${this.token}` }
+            });
+
+            if (response.status === 200) {
+              const index = this.selectedMenuItem.comments.findIndex(c => c.id === comment.id);
+              if (index !== -1) {
+                this.selectedMenuItem.comments.splice(index, 1); // 刪除評論
+              }
+            } else {
+              console.error("評論刪除失敗:", response.data.message);
+            }
+          } catch (error) {
+            console.error("刪除評論時發生錯誤:", error.message || error);
+          }
+        }
+      },
+
+      // 關閉評論模態框
+      closeCommentsModal() {
+        this.showCommentsModal = false;
+        this.selectedMenuItem = null; // 清空選擇的菜品數據
       },
       // 獲取餐廳資料
       async fetchRestaurants(maincatId) {
@@ -195,11 +312,27 @@
         const regex = /^[0-9]{16}$/; // 基本的信用卡號驗證，16位數字
         this.isCardValid = regex.test(this.creditCardNumber);
       },
+     
+      // 點擊餐廳資訊按鈕，跳轉到餐廳詳細頁
+      viewStore(restaurantName) {
+        const selected = this.restaurants.find(r => r.name === restaurantName);
+        if (selected && selected.id) {
+          this.$router.push(`/store/${selected.id}`);
+        } else {
+          console.error("餐廳資料無效");
+        }
+      },
 
-      // 執行結帳操作(更新)##########################################################
+      // 執行結帳操作
       async checkout() {
         if (!this.cart.length) {
           alert("購物車為空，無法結帳");
+          return;
+        }
+
+        // 檢查是否登入，未登入則跳轉至登入頁面
+        if (!this.isLoggedIn) {
+          alert("請先登入！");
           return;
         }
 
@@ -214,24 +347,19 @@
               price: item.price,
             })),
           };
-          // 如果已登入，附加用戶 ID 和 Token
-          if (this.isLoggedIn) {
-            orderData.user_id = this.userId; // 傳遞用戶 ID
-          }
-          console.log(this.isLoggedIn)
-          console.log(this.token)
+
           // 設定請求頭部（包含 Token）
           const headers = {};
           if (this.isLoggedIn && this.token) {
             headers.Authorization = `Bearer ${this.token}`;
           }
+
           // 發送 POST 請求到後端
           const response = await axios.post("http://127.0.0.1:5000/checkout", orderData, { headers });
 
           if (response.status === 200) {
             alert("結帳成功！");
-            // 清空購物車
-            this.cart = [];
+            this.cart = []; // 清空購物車
           } else {
             alert("結帳失敗：" + (response.data.error || "未知錯誤"));
           }
@@ -240,7 +368,6 @@
           alert("結帳過程中發生錯誤，請稍後再試。");
         }
       },
-      //################################################################################
     },
 
     // 頁面加載時，根據選擇的主類別加載餐廳
@@ -252,7 +379,6 @@
     },
   };
 </script>
-
 
 
 
@@ -303,12 +429,13 @@
 }
 
 .price {
+  margin-right: 20px;
   font-weight: bold;
   color: #d9534f;
 }
 
 .add-to-cart-button {
-  background: linear-gradient(to right, #5cb85c, #4cae4c); /* 漸變綠色 */
+  background: linear-gradient(to right, #8ee58e, #4cae4c); 
   color: white;
   border: none;
   padding: 10px;
@@ -321,53 +448,134 @@
   background: linear-gradient(to right, #4cae4c, #45a049); 
 }
 
+/* 訂單總覽樣式 */
 .order-summary {
-  margin-top: 20px;
-  background-color: rgba(255, 255, 255, 0.9); 
+  background-color: #fff;
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  border: 2px solid #343a40; 
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
 .cart-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
 }
 
 .remove-button {
-  background-color: #d9534f; 
+  background-color: #ff6347;
   color: white;
   border: none;
-  padding: 5px;
-  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  border-radius: 4px;
 }
 
 .remove-button:hover {
-  background-color: #c9302c; 
+  background-color: #2b110c;
 }
 
 .total-price {
+  font-size: 1.1rem;
   font-weight: bold;
-  margin-top: 10px;
+  text-align: center;
+  margin: 10px 0;
 }
 
-.checkout-button {
-  background: linear-gradient(to right, #0275d8, #0056b3); /* 藍色漸變 */
-  color: white;
+/* 表單樣式 */
+.form-group {
+  margin-top: 12px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-group input {
+  padding: 8px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.form-group input:focus {
+  border-color: #8CAE68;
+  outline: none;
+}
+
+/* 付款方式選擇 */
+.payment-method {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px; 
+}
+
+
+.payment-method button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: rgb(12, 7, 7);
   border: none;
-  padding: 10px;
-  border-radius: 5px;
+  border-radius: 10px; 
+  cursor: pointer; 
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.payment-method button.active { 
+  transform: scale(1.1); 
+}
+
+.payment-method button:hover {
+  transform: scale(1.05); 
+}
+
+.payment-method input {
+  transform: scale(1.2);
+}
+
+.error-message {
+  color: #ff6347;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* 結帳按鈕 */
+.checkout-button {
+  background: linear-gradient(to right, #e8ffe8, #4caea9); 
+  color: rgb(22, 12, 12);
+  border: none;
+  padding: 10px 0;
+  font-size: 1rem;
+  border-radius: 6px;
+  width: 100%;
+  margin-top: 20px;
   cursor: pointer;
-  margin-top: 10px;
-  transition: background-color 0.3s;
+  text-align: center;
+}
+
+.checkout-button:disabled {
+  background-color: #ffd2d2;
+  cursor: not-allowed;
 }
 
 .checkout-button:hover {
-  background: linear-gradient(to right, #0056b3, #004494); 
+  background-color: #15b6e8;
 }
 
 .view-store-button {
@@ -377,12 +585,12 @@
   font-size: 16px;
   font-weight: bold;
   color: white;
-  background-color: #3897ea; /* 顯眼的橘色背景 */
+  background-color: #3897ea; 
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 增加立體感 */
-  transition: all 0.3s ease; /* 平滑動畫效果 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+  transition: all 0.3s ease;
 }
 
 .view-store-button:hover {
@@ -396,5 +604,102 @@
   box-shadow: none; 
   transform: scale(0.95); 
 }
+
+/* 評論模態框 */
+.comments-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5); /* 加深背景色 */
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 90%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.5s ease-out;
+  border-left: 5px solid #5c6bc0; /* 加入顏色條 */
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comments-container {
+  margin-top: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.comment-card {
+  background: #f4f4f9;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-left: 5px solid #ff4081; /* 加入顏色條 */
+}
+
+.comment-card:hover {
+  transform: translateX(7px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  border-left: 5px solid #ff5722; /* 增加滑鼠懸停效果 */
+}
+
+.comment-user {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #2f3b52;
+  margin-bottom: 5px;
+}
+
+.comment-text {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.comment-meta {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.close-modal-button {
+  background-color: #1e88e5;
+  color: white;
+  padding: 12px 25px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 50px; /* 圓形按鈕 */
+  cursor: pointer;
+  margin-top: 30px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.close-modal-button:hover {
+  background-color: #1565c0;
+  transform: scale(1.05); /* 按鈕放大效果 */
+}
+
+
 
 </style>
