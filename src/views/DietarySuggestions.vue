@@ -2,8 +2,9 @@
   <div class="dietary-suggestions">
     <h1>個人飲食建議</h1>
 
+    <!-- 營養攝取分析 -->
     <div class="nutrition-summary">
-      <h2>您的營養攝取分析</h2>
+      <h2>您近三日的營養攝取分析</h2>
       <ul>
         <li v-for="(value, key) in deficits" :key="key">
           <span :class="{ 'highlight-deficit': value > 0 }">
@@ -13,17 +14,16 @@
       </ul>
     </div>
 
+    <!-- 推薦食物清單 -->
     <div class="suggestions">
       <h2>建議食物清單</h2>
       <ul class="food-list">
-        <li
-          v-for="food in recommendations"
-          :key="food.name"
-          @click="selectFood(food)"
-        >
-          🍴 {{ food.name }} - {{ food.restaurant_name }}
+        <li v-for="food in recommendations" :key="food.name">
+          <span @click="selectFood(food)">
+            🍴 {{ food.name }} - {{ food.restaurant_name }}
+          </span>
+          <button @click="addToCart(food)">加入購物車</button>
         </li>
-        
       </ul>
     </div>
 
@@ -59,100 +59,123 @@
             <p v-else>暫無評論</p>
           </div>
         </div>
-        <button class="close-button" @click="closeModal">關閉</button>
+
+        <!-- 按鈕區域 -->
+        <div class="modal-buttons">
+          <button class="close-button" @click="closeModal">關閉</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
 
 <script>
 import { ref, onMounted } from "vue";
 import axios from "axios";
 
 export default {
-  setup() {
-    const deficits = ref({});
-    const recommendations = ref([]);
-    const selectedFood = ref(null);
-    const comments = ref([]);
-    const loadingComments = ref(false);
-    const isModalOpen = ref(false); // 控制模態框開關
-
-    const fetchRecommendations = async () => {
+  data() {
+    return {
+      deficits: {}, // 營養缺失資料
+      recommendations: [], // 推薦食物清單
+      selectedFood: null, // 被選擇的食物
+      comments: [], // 評論清單
+      loadingComments: false, // 評論加載狀態
+      isModalOpen: false, // 模態框開關
+      isLoggedIn: !!localStorage.getItem("token"), // 是否已登入
+      token: localStorage.getItem("token"), // 用戶 Token
+      userId: null, // 用戶 ID
+    };
+  },
+  
+  methods: {
+    // 獲取推薦食物
+    async fetchRecommendations() {
       try {
         const response = await axios.get("/api/recommendations", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${this.token}` },
         });
-        deficits.value = response.data.deficits;
-        recommendations.value = response.data.recommendations;
+        this.deficits = response.data.deficits;
+        this.recommendations = response.data.recommendations;
       } catch (error) {
         console.error("Error fetching recommendations:", error);
       }
-    };
+    },
 
-    const fetchComments = async (foodId) => {
-      loadingComments.value = true;
+    // 獲取評論
+    async fetchComments(foodId) {
+      this.loadingComments = true;
       try {
         const response = await axios.get(`/api/comments/store/${foodId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${this.token}` },
         });
-        comments.value = response.data || [];
+        this.comments = response.data || [];
       } catch (error) {
         console.error("Error fetching comments:", error);
-        comments.value = [];
+        this.comments = [];
       } finally {
-        loadingComments.value = false;
+        this.loadingComments = false;
       }
-    };
+    },
 
-    const selectFood = (food) => {
-      selectedFood.value = food;
-      isModalOpen.value = true; // 打開模態框或顯示右側框
-      fetchComments(food.id); // 載入該食物的評論
-      console.log(food);
-    };
+    // 選擇某個食物並打開模態框
+    selectFood(food) {
+      this.selectedFood = food;
+      this.isModalOpen = true;
+      this.fetchComments(food.id);
+    },
 
-    const closeModal = () => {
-      isModalOpen.value = false; // 關閉模態框或右側框
-      selectedFood.value = null;
-      comments.value = [];
-    };
+    // 關閉模態框
+    closeModal() {
+      this.isModalOpen = false;
+      this.selectedFood = null;
+      this.comments = [];
+    },
 
-    const likeComment = async (commentId) => {
+    // 添加商品到購物車
+    addToCart(item) {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const existingItem = cart.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({ ...item, quantity: 1 });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      this.updateCartCount();
+      alert("添加成功！");
+    },
+
+    updateCartCount() {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      this.cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    },
+
+    // 點讚評論
+    async likeComment(commentId) {
       try {
         const response = await axios.post(
           `/api/comments/like/${commentId}`,
           {},
           {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            headers: { Authorization: `Bearer ${this.token}` },
           }
         );
-        // 更新該評論的點讚數
-        const comment = comments.value.find((c) => c.id === commentId);
+
+        const comment = this.comments.find((c) => c.id === commentId);
         if (comment) comment.likes = response.data.likes;
       } catch (error) {
         console.error("Error liking comment:", error);
       }
-    };
-
-    onMounted(() => {
-      fetchRecommendations();
-    });
-
-    return {
-      deficits,
-      recommendations,
-      selectedFood,
-      comments,
-      loadingComments,
-      isModalOpen,
-      selectFood,
-      closeModal,
-      likeComment,
-    };
+    },
+  },
+  mounted() {
+    this.fetchRecommendations();
   },
 };
 </script>
+
 
 
   
@@ -224,6 +247,14 @@ h1, h2 {
   flex-direction: column;
 }
 
+/* 按鈕區域 */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
 /* 關閉按鈕 */
 .close-button {
   margin-top: 10px;
@@ -238,6 +269,20 @@ h1, h2 {
 
 .close-button:hover {
   background-color: #c82333;
+}
+
+.checkout-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.checkout-button:hover {
+  background-color: #218838;
+}
+
+.checkout-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 /* 主內容佈局 */

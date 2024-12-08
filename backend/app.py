@@ -396,9 +396,6 @@ def update_daily_log():
     foods = data.get("foods", [])
     print(foods)
 
-    # 僅允許當天更新
-    # if log_date != today_date:
-    #     return jsonify({'error': 'Only today\'s record can be updated.'}), 403
     # 查找當天日誌，若不存在則創建
     log = DietLog.query.filter_by(user_id=current_user, log_date=log_date).first()
     if not log:
@@ -842,6 +839,7 @@ def get_recommendations():
                     "protein": food.protein,
                     "fat": food.fat,
                     "calories": food.calories,
+                    "price": food.price,
                     "img_url": food.img_url
                 })
 

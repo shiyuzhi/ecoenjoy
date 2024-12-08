@@ -46,40 +46,23 @@
     </div>
     <p v-else>請選擇一間餐廳以查看菜單。</p>
 
-    <div class="order-summary" v-if="cart.length">
-       <!-- 餐廳資訊按鈕 -->
-       <router-link :to="`/store/${selectedRestaurantId}`">
-        <button class="view-store-button">
-          餐廳資訊
-        </button>
-       </router-link>
-      <h3>訂單總覽</h3>
-      <div class="cart-item" v-for="(item, index) in cart" :key="index">
-        <span>{{ item.name }} - {{ item.quantity }} x {{ item.price }} 元</span>
-        <button @click="removeFromCart(index)" class="remove-button">移除</button>
+    <div v-if="showCommentsModal" class="comments-modal">
+      <div class="modal-content">
+        <h3>{{ selectedMenuItem.name }} 的評論</h3>
+        <div v-if="selectedMenuItem.comments.length === 0" class="no-comments-message">
+          <p>目前還沒評論喔！來第一個留言吧！</p>
+        </div>
+        <div v-else class="comments-container">
+          <ul>
+            <li v-for="(comment, index) in selectedMenuItem.comments" :key="index" class="comment-card">
+              <p class="comment-user"><strong>{{ comment.user.username }}</strong>: <span class="comment-text">{{ comment.data }}</span></p>
+              <div class="comment-meta"><span>👍 {{ comment.likes }} 喜歡</span> | <span>💬 {{ comment.replies }} 回覆</span></div>
+            </li>
+          </ul>
+        </div>
+        <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
       </div>
-      <p class="total-price">總價: {{ totalPrice }} 元</p>
-      <!-- 付款方式選擇 -->
-      <div class="payment-method">
-        <label>
-          <input type="radio" v-model="paymentMethod" value="cash"> 現金
-        </label>
-        <label>
-          <input type="radio" v-model="paymentMethod" value="credit_card"> 信用卡
-        </label>
-      </div>
-
-
-      <!-- 信用卡資料 -->
-      <div v-if="paymentMethod === 'credit_card'">
-        <label for="credit-card-number">信用卡號：</label>
-        <input type="text" id="credit-card-number" v-model="creditCardNumber" placeholder="輸入信用卡號" />
-        <span v-if="!isCardValid" class="error-message">信用卡號格式不正確</span>
-      </div>
-    
-      <button @click="checkout" :disabled="isCheckoutDisabled" class="checkout-button">結帳</button>
     </div>
-    <p v-else>尚未添加任何商品到購物車。</p>
   </div>
 </template>
 
@@ -119,22 +102,6 @@
       }
     },
 
-    computed: {
-      // 計算購物車的總價
-      totalPrice() {
-        return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-      },
-
-      // 計算結帳按鈕是否禁用
-      isCheckoutDisabled() {
-        if (this.paymentMethod === 'credit_card') {
-          // 信用卡付款時，檢查卡號是否有效
-          return !this.isCardValid || !this.creditCardNumber;
-        }
-        return this.cart.length === 0;
-      },
-    },
-
     watch: {
       // 當 maincat_selected 變動時重新加載餐廳資料
       maincat_selected(newMaincat) {
@@ -143,8 +110,128 @@
     },
 
     methods: {
-      viewStore() {
-        this.$router.push(`/store/${this.selectedRestaurantId}`);
+      // 查看評論
+      async viewComments(item) {
+        this.selectedMenuItem = { ...item, comments: [] }; // 初始化當前菜品數據
+
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/api/comments/store/${this.selectedMenuItem.id}`);
+          if (response.status === 200) {
+            // 如果返回的評論是空數組
+            if (response.data.length === 0) {
+              this.selectedMenuItem.comments = []; // 空評論
+              this.noCommentsMessage = "目前還沒評論喔！來第一個留言吧！";
+            } else {
+              this.selectedMenuItem.comments = response.data; // 設置評論數據
+              this.noCommentsMessage = ""; // 清除消息
+            }
+          } else {
+            console.error("評論加載失敗:", response.data.message);
+            this.noCommentsMessage = "無法加載評論，請稍後再試。";
+          }
+        } catch (error) {
+          console.error("獲取評論時發生錯誤:", error.message || error);
+          this.noCommentsMessage = "獲取評論時發生錯誤。";
+        } finally {
+          this.showCommentsModal = true; // 顯示模態框
+        }
+      },
+
+      // 提交新評論
+      async submitComment() {
+        if (!this.isLoggedIn) {
+          alert("請先登入才能提交評論！");
+          return; // 用戶未登入，阻止評論提交
+        }
+
+        if (!this.newComment.trim()) {
+          alert("請輸入評論內容！");
+          return;
+        }
+
+        const commentData = {
+          user_id: this.userId, // 用戶 ID
+          menu_item_id: this.selectedMenuItem.id, // 當前菜品 ID
+          comment: this.newComment, // 用戶輸入的評論內容
+        };
+
+        try {
+          const response = await axios.post("http://127.0.0.1:5000/api/comments", commentData, {
+            headers: { Authorization: `Bearer ${this.token}` }
+          });
+
+          if (response.status === 200) {
+            this.selectedMenuItem.comments.push(response.data); // 更新菜品的評論
+            this.newComment = ''; // 清空評論框
+          } else {
+            console.error("評論提交失敗:", response.data.message);
+          }
+        } catch (error) {
+          console.error("提交評論時發生錯誤:", error.message || error);
+        }
+    },
+
+      // 編輯評論（僅限登入用戶）
+      async editComment(comment) {
+        if (!this.isLoggedIn) {
+          alert("請先登入才能編輯評論！");
+          return; // 用戶未登入，阻止編輯
+        }
+
+        // 這裡可以加入編輯邏輯，根據需要提供編輯功能
+        // 例如，彈出編輯框，並提交修改後的評論
+        const editedComment = prompt("請編輯您的評論：", comment.comment);
+        if (editedComment !== null && editedComment.trim() !== '') {
+          try {
+            const response = await axios.put(`http://127.0.0.1:5000/api/comments/${comment.id}`, {
+              comment: editedComment
+            }, {
+              headers: { Authorization: `Bearer ${this.token}` }
+            });
+
+            if (response.status === 200) {
+              comment.comment = editedComment; // 更新評論內容
+            } else {
+              console.error("評論編輯失敗:", response.data.message);
+            }
+          } catch (error) {
+            console.error("編輯評論時發生錯誤:", error.message || error);
+          }
+        }
+      },
+
+      // 刪除評論（僅限登入用戶）
+      async deleteComment(comment) {
+        if (!this.isLoggedIn) {
+          alert("請先登入才能刪除評論！");
+          return; // 用戶未登入，阻止刪除
+        }
+
+        const confirmDelete = confirm("您確定要刪除此評論嗎？");
+        if (confirmDelete) {
+          try {
+            const response = await axios.delete(`http://127.0.0.1:5000/api/comments/${comment.id}`, {
+              headers: { Authorization: `Bearer ${this.token}` }
+            });
+
+            if (response.status === 200) {
+              const index = this.selectedMenuItem.comments.findIndex(c => c.id === comment.id);
+              if (index !== -1) {
+                this.selectedMenuItem.comments.splice(index, 1); // 刪除評論
+              }
+            } else {
+              console.error("評論刪除失敗:", response.data.message);
+            }
+          } catch (error) {
+            console.error("刪除評論時發生錯誤:", error.message || error);
+          }
+        }
+      },
+
+      // 關閉評論模態框
+      closeCommentsModal() {
+        this.showCommentsModal = false;
+        this.selectedMenuItem = null; // 清空選擇的菜品數據
       },
       // 獲取餐廳資料
       async fetchRestaurants(maincatId) {
@@ -177,78 +264,37 @@
 
       // 添加商品到購物車
       addToCart(item) {
-        const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const existingItem = cart.find((cartItem) => cartItem.id === item.id);
         if (existingItem) {
-          existingItem.quantity += 1; // 若商品已存在，數量+1
+          existingItem.quantity += 1;
         } else {
-          this.cart.push({ ...item, quantity: 1 }); // 新商品加入購物車
+          cart.push({ ...item, quantity: 1 });
+        }
+        localStorage.setItem("cart", JSON.stringify(cart));
+        this.updateCartCount();
+        alert("添加成功！");
+      },
+
+      updateCartCount() {
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        this.cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      },
+     
+      // 點擊餐廳資訊按鈕，跳轉到餐廳詳細頁
+      viewStore(restaurantName) {
+        const selected = this.restaurants.find(r => r.name === restaurantName);
+        if (selected && selected.id) {
+          this.$router.push(`/store/${selected.id}`);
+        } else {
+          console.error("餐廳資料無效");
         }
       },
-
-      // 從購物車中移除商品
-      removeFromCart(index) {
-        this.cart.splice(index, 1); // 刪除指定索引的商品
-      },
-
-      // 驗證信用卡號格式
-      validateCard() {
-        const regex = /^[0-9]{16}$/; // 基本的信用卡號驗證，16位數字
-        this.isCardValid = regex.test(this.creditCardNumber);
-      },
-
-      // 執行結帳操作(更新)##########################################################
-      async checkout() {
-        if (!this.cart.length) {
-          alert("購物車為空，無法結帳");
-          return;
-        }
-
-        try {
-          // 構造要發送的訂單數據
-          const orderData = {
-            user_id: this.userId, // 傳遞用戶 ID
-            cart: this.cart.map(item => ({
-              info_id: item.id, // 商品的 ID
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-          };
-          // 如果已登入，附加用戶 ID 和 Token
-          if (this.isLoggedIn) {
-            orderData.user_id = this.userId; // 傳遞用戶 ID
-          }
-          console.log(this.isLoggedIn)
-          console.log(this.token)
-          // 設定請求頭部（包含 Token）
-          const headers = {};
-          if (this.isLoggedIn && this.token) {
-            headers.Authorization = `Bearer ${this.token}`;
-          }
-          // 發送 POST 請求到後端
-          const response = await axios.post("http://127.0.0.1:5000/checkout", orderData, { headers });
-
-          if (response.status === 200) {
-            alert("結帳成功！");
-            // 清空購物車
-            this.cart = [];
-          } else {
-            alert("結帳失敗：" + (response.data.error || "未知錯誤"));
-          }
-        } catch (error) {
-          console.error("結帳過程中發生錯誤：", error.response?.data || error.message);
-          alert("結帳過程中發生錯誤，請稍後再試。");
-        }
-      },
-      //################################################################################
     },
 
     // 頁面加載時，根據選擇的主類別加載餐廳
     mounted() {
       this.fetchRestaurants(this.maincat_selected);
-      if (!this.paymentMethod) {
-        this.paymentMethod = 'cash';
-      }
     },
   };
 </script>
@@ -321,13 +367,11 @@
   background: linear-gradient(to right, #4cae4c, #45a049); 
 }
 
-.order-summary {
-  margin-top: 20px;
-  background-color: rgba(255, 255, 255, 0.9); 
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  border: 2px solid #343a40; 
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
 .cart-item {
@@ -336,38 +380,28 @@
   align-items: center;
 }
 
-.remove-button {
-  background-color: #d9534f; 
-  color: white;
-  border: none;
-  padding: 5px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+/* 表單樣式 */
+.form-group {
+  margin-top: 12px;
 }
 
-.remove-button:hover {
-  background-color: #c9302c; 
+.form-group label {
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  font-weight: 500;
 }
 
-.total-price {
-  font-weight: bold;
-  margin-top: 10px;
+.form-group input {
+  padding: 8px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
 }
 
-.checkout-button {
-  background: linear-gradient(to right, #0275d8, #0056b3); /* 藍色漸變 */
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background-color 0.3s;
-}
-
-.checkout-button:hover {
-  background: linear-gradient(to right, #0056b3, #004494); 
+.form-group input:focus {
+  border-color: #8CAE68;
+  outline: none;
 }
 
 .view-store-button {

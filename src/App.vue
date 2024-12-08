@@ -46,10 +46,20 @@
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
-         <!-- Home 按鈕 -->
-        <router-link to="/">
-          <button class="home-btn">首頁</button>
-        </router-link>
+        <!-- -------------------------------------------- -->
+        <div class="auth-buttons">
+          <!-- 購物車 按鈕 -->
+          <router-link to="/checkout">
+            <div class="cart-btn">
+              🛒 {{ cartCount }}
+            </div>
+          </router-link>
+          <!-- Home 按鈕 -->
+          <router-link to="/">
+            <button class="home-btn">首頁</button>
+          </router-link>
+        </div>
+        <!-- -------------------------------------------- -->
       </header>
 
       <div class="content">
@@ -148,6 +158,7 @@
       const offers = ref([]); 
       const restaurants = ref([]);  // 儲存餐廳區域資料
       const slideIndex = ref(0);  // 輪播的當前索引
+      const cartCount = ref(0); // 計算購物車商品數量
 
       // 載入餐廳資料
       const loadTopRestaurants = async () => {
@@ -276,6 +287,10 @@
 
       // 在組件掛載時加載資料
       onMounted(() => {
+        //-----------------------------------------------------------------
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        cartCount.value = cart.reduce((sum, item) => sum + item.quantity, 0);
+        //-----------------------------------------------------------------
         get_all_maincat();
         get_all_offers();
         fetchUser();
@@ -303,105 +318,186 @@
 </script>
 
 
+<style scoped>  
+  .root {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    flex-direction: column; 
+    
+  }
   
+  .menu-icon {
+    font-size: 24px;
+    margin: 20px;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 10px;
+    background-color: #8cae68;
+    color: white;
+    transition: transform 0.2s ease;
+  }
   
-<style scoped>
-.root {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
+  .sidebar {
+    width: 300px;
+    background-color: #8cae68;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: -400px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .sidebar.active {
+    left: 0;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 30%;
+      left: -100%;
+    }
+  
+    .sidebar.active {
+      left: 0;
+    }
+  }
+  
+  .menu-icon:hover {
+    transform: rotate(90deg);
+  }
+  
+  .user-info {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 60px;
+  }
+  
+  .user-info:hover {
+    transform: translateY(-5px);
+  }
+  
+  .user-icon {
+    font-size: 50px;
+  }
+  
+  .username {
+    margin-top: 10px;
+  }
+  
+  .username a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.2rem;
+  }
+  
+  nav ul {
+    list-style: none;
+    padding: 0;
+    text-align: center;
+  }
+  
+  nav ul li {
+    margin: 30px 0;
+  }
+  
+  nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 400;
+    transition: color 0.3s;
+  }
+  
+  nav ul li a:hover {
+    color: #0f0a03;
+  }
+  
+  .logo-container {
+    text-align: center;
+  }
+  
+  .logo {
+    width: 100px;
+    height: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  
+  .main-content {
+    margin-left: 350px; /* Leave space for the sidebar */
+    padding: 20px;
+    flex-grow: 1;
+    overflow: auto; /* Allow scrolling inside the content */
+  }
+  
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .location-selector select {
+    font-size: 16px;
+  }
+  
+  .search-bar input {
+    padding: 5px;
+    font-size: 16px;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 20px 0;
+  }
 
-.sidebar {
-  width: 250px; /* 固定寬度 */
-  background-color: #8CAE68;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: fixed;
-  height: 100%;
-  top: 0;
-  left: 0;
-  transition: transform 0.3s ease;
-  transform: translateX(-100%);
-}
-
-.sidebar.active {
-  transform: translateX(0);
-}
-
-.menu-icon {
-  font-size: 24px;
-  margin: 20px;
+.auth-buttons button, .home-btn {
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  border: none;
+  color: #000000;
+  border-radius: 8px;
   cursor: pointer;
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 10px;
-  background-color: #8CAE68;
-  color: white;
+  transition: background-color 0.3s, transform 0.3s ease;  /* 添加平滑的變化 */
+  margin: 0.5em; /* 讓按鈕之間有些間距 */
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  margin-top: 60px;
+.cart-btn {
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgb(254, 254, 254);
+  background-color: #076785;
+  transition: background-color 0.3s, transform 0.3s ease;
 }
 
-.user-icon {
-  font-size: 50px;
-}
-
-.username {
-  margin-top: 10px;
-}
-
-.username a {
-  color: white;
-  text-decoration: none;
-}
-
-nav ul {
-  list-style: none;
-  padding: 0;
-  text-align: center;
-}
-
-nav ul li {
-  margin: 20px 0;
-}
-
-nav ul li a {
-  color: white;
-  text-decoration: none;
-}
-
-.main-content {
-  flex-grow: 1; 
-  margin-left: 250px; 
-  padding: 20px;
-  overflow-y: auto; 
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.auth-buttons button:hover, .home-btn:hover ,.cart-btn:hover{
+  background-color: #fff; 
+  transform: translateY(-4px);  /* 按鈕向上浮動 */
 }
 
 
-.location-selector select {
-  font-size: 16px;
+.auth-buttons button:focus, .home-btn:focus ,.cart-btn:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);  
 }
 
-.search-bar input {
-  padding: 5px;
-  font-size: 16px;
-}
 
-.restaurant-list {
+.auth-buttons {
   display: flex;
   overflow-x: scroll ;
   gap: 10px;
@@ -606,5 +702,4 @@ p {
     font-size: 14px;  /* 在小螢幕上縮小字體 */
   }
 }
-
 </style>
