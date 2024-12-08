@@ -295,8 +295,8 @@ def register():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = request.json.get('username')
-    password = request.json.get('password')
+    username = data.get('username')
+    password = data.get('password')
 
     if not username or not password:
         return jsonify({'message': '用戶名和密碼都是必需的'}), 400
@@ -873,6 +873,7 @@ def get_recommendations():
                     "id": food.id,
                     "name": food.name,
                     "restaurant_name": food.subcat.name,
+                    "price": food.price,
                     "carbs": food.carbo,
                     "protein": food.protein,
                     "fat": food.fat,
