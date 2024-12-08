@@ -66,7 +66,7 @@ h1 {
 
 .features {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between; /* 三個區塊均勻分佈 */
   margin-bottom: 50px;
 }
 
@@ -76,6 +76,12 @@ h1 {
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(223, 205, 205, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* 加入過渡效果 */
+}
+
+.feature-item:hover {
+  transform: translateY(-5px); /* 懸停時向上浮動 */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* 增加陰影強度 */
 }
 
 h2 {
@@ -106,9 +112,17 @@ button {
   border-radius: 5px;
   cursor: pointer;
   font-size: 1.1em;
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* 添加過渡效果 */
 }
 
 button:hover {
   background-color: #0056b3;
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+}
+
+button:active {
+  transform: translateY(0); 
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
 }
 </style>

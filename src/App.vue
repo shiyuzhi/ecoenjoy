@@ -65,10 +65,13 @@
       <div class="content">
         <router-view></router-view>
 
-        <H3>餐廳推薦</H3>
+        <H2>餐廳推薦</H2>
         <div class="restaurant-list">
           <!-- 列出每家餐廳 -->
           <div class="restaurant-item" v-for="restaurant in restaurants" :key="restaurant.id">
+            <div class="image-container">
+              <img v-if="restaurant && restaurant.img_url" :src="`/store/${restaurant.img_url}`" :alt="restaurant.name" class="restaurant-image" />
+            </div>
             <h3>{{ restaurant.name }}</h3>
             <p>{{ restaurant.address }}</p>
             <div class="rating">
@@ -180,7 +183,7 @@
         sidebarActive.value = !sidebarActive.value;
       };
 
-      // 獲取當前用戶資訊####################################################
+      // 獲取用戶資料
       const fetchUser = async () => {
         try {
           const token = localStorage.getItem('token');
@@ -197,15 +200,14 @@
           localStorage.removeItem('token');
         }
       };
-      //######################################################################
 
       // 登出處理
       const handleSignOutClick = async () => {
         if (confirm("確定要登出嗎？")) {
           try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
             if (!token) {
-              alert('未找到有效的 Token');
+              alert('已登出');
               return;
             }
 
@@ -215,10 +217,10 @@
 
             if (response.status === 200) {
               user.value = null; 
-              localStorage.removeItem('token');
-              localStorage.removeItem('username');
-              getUserData();
-              router.push('/login');
+              sessionStorage.removeItem('token');
+              sessionStorage.removeItem('username');
+              localStorage.removeItem('token');  // 清除本地儲存
+              router.push('/login');  // 登出後跳轉至登入頁面
             }
           } catch (error) {
             console.error('登出失敗:', error.response ? error.response.data : error.message);
@@ -281,9 +283,6 @@
       watch(maincat_selected, (newValue) => {
         loadTopRestaurants(); // 調用 loadTopRestaurants
       });
-       
-        
-
 
       // 在組件掛載時加載資料
       onMounted(() => {
@@ -499,207 +498,286 @@
 
 .auth-buttons {
   display: flex;
-  overflow-x: scroll ;
-  gap: 10px;
-  padding: 20px;
+  justify-content: center; /* 中央對齊 */
+  gap: 1em;  /* 按鈕之間的間距 */
 }
 
-.restaurant-item {
-  width: 500px; 
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 10px;
+.home-btn {
+  background-color: #fff9f8;  
+  color: rgb(71, 44, 44);
+}
+
+.home-btn:hover {
+  background-color: #aaea80;  
+  transform: translateY(-4px);  
+}
+
+  .restaurant-list {
+    display: flex;
+    overflow-x: auto;
+    gap: 30px;
+    padding: 0 20px;
+    scrollbar-width: thin;
+  }
+
+  .restaurant-list::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .restaurant-list::-webkit-scrollbar-thumb {
+    background-color: #442727;
+    border-radius: 8px;
+  }
+
+  .restaurant-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(#1eb8a6, #ffffff);
+    border-radius: 15px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 15px;
+    width: 300x;
+    flex-shrink: 0;
+  }
+
+  .restaurant-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .image-container {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 10px;
+    margin-bottom: 15px;
+  }
+
+  .restaurant-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+  }
+
+  .restaurant-item:hover .restaurant-image {
+    transform: scale(1.05);
+  }
+
+  .restaurant-info {
+    text-align: center;
+  }
+
+  .restaurant-name {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .restaurant-address {
+    font-size: 1rem;
+    color: #777;
+    margin-bottom: 12px;
+  }
+
+  /* 模態框背景 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  flex-direction: column; 
-  justify-content: space-between; 
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-.restaurant-item h3 {
-  font-size: 20px;
-}
+/* 模態框樣式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 
-.restaurant-item p {
-  margin: 5px 0;
-}
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 800px;
+    overflow-y: auto;
+  }
 
-.restaurant-item ul {
-  list-style-type: none;
-  padding-left: 10px;
-}
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+  }
 
-.restaurant-item li {
-  margin-bottom: 10px;
-}
+  .menu-items {
+    display: flex;
+    flex-wrap: wrap;
+  }
 
-.rating {
+  .menu-item {
+    display: flex;
+    margin: 10px;
+    width: 48%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .menu-item img {
+    max-width: 120px;
+    margin-right: 15px;
+  }
+
+  .item-details {
+    flex-grow: 1;
+  }
+
+  .item-details h4 {
+    margin: 0;
+  }
+
+  .price {
+    font-size: 18px;
+    font-weight: bold;
+    color: green;
+  }
+
+  .rating {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .star {
+    color: #ffb400;
+    font-size: 1.2rem;
+  }
+
+  .avg-rating {
+    font-size: 1rem;
+    color: #444;
+  }
+
+  
+  .latest-offers {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #ffffff;
+    border: 2px solid #d4d4d4;
+    border-radius: 12px;
+  }
+  footer {
+    background-color: #1eb8a6;
+    margin-top: 20px;
+    color: #fff;
+    padding: 15px 0;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .footer-content {
+    display: flex;
+    justify-content: space-around;
+    padding-bottom: 20px;
+  }
+
+  .footer-section h4 {
+    font-weight: bold;
+  }
+
+  .footer-section ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .footer-section ul li {
+    margin: 8px 0;
+  }
+
+  .footer-section ul li a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .footer-section ul li a:hover {
+    color: #80d5d1;
+  }
+
+  .footer-bottom {
   display: flex;
+  justify-content: flex-end; 
   align-items: center; 
-  margin-top: 30px;  
+  gap: 20px;
 }
 
-.star {
-  font-size: 15px;
-  margin-right: 5px;  /* 星星之間有間距 */
-}
-
-.restaurant-item .avg-rating {
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.latest-offers {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #ffffff; 
-  border: 2px solid black; 
-  border-radius: 10px; 
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.latest-offers h2 {
-  margin-bottom: 20px;
-}
-
-.offers-list {
-  padding: 0;
-}
-
-.offer-item {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  transition: background-color 0.3s;
-}
-
-.offer-item:last-child {
-  border-bottom: none;
-}
-
-.offer-item:hover {
-  background-color: #f0f0f0;
-}
-
-.auth-buttons {
-  display: flex;  
-  color: #000000;                                            
-}
-
-footer {
-  background-color: #1eb8a6;
-  margin-top: 20px;
-  color: #fff;
-  padding: 15px 0;
-  text-align: center;
-  border-radius: 20px; 
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.footer-content {
+.footer-bottom .social-icons {
   display: flex;
-  justify-content: space-around;
-  padding-bottom: 20px;
+  gap: 10px; 
 }
 
-.footer-section h4 {
-  font-weight: bold;
+.footer-bottom .language-selector {
+  margin-left: 20px; 
 }
 
-.footer-section ul {
-  list-style: none;
-  padding: 0;
-}
-
-.footer-section ul li {
-  margin: 8px 0;
-}
-
-.footer-section ul li a {
-  color: #fff;
-  text-decoration: none;
-  transition: color 0.3s; /* 添加過渡效果 */
-}
-
-.footer-section ul li a:hover {
-  color: #f39c12; /* 懸停顏色 */
-}
-
-.footer-bottom {
-  display: flex;
-  justify-content: space-between; 
-  align-items: center; /* 垂直置中 */
-  padding: 10px; 
-}
-.social-icons a {
-  color: #fff;
-  margin-right: 10px;
-  font-size: 1.5rem;
-}
-
-.language-selector select {
-  background-color: #000;
-  color: #fff;
-  border: 1px solid #fff;
-  padding: 5px;
-  border-radius: 10px; 
-  cursor: pointer; 
-}
-
-.language-selector select:hover {
-  border-color: #f39c12; 
-  transform: translateX(-5px); 
-}
-
-p {
-  margin: 0;
+.footer-bottom p {
+  margin-left: 20px; 
   text-align: right;
-} 
-
-.logo-container {
-  text-align: center; 
 }
-
-.logo {
-  width: 100px; 
-  height: auto; 
-}
-
-
-.logo-container {
-  text-align: center; 
-}
-
-.logo {
-  width: 100px; 
-  height: auto; 
-}
-
-
 @media (max-width: 768px) {
   .sidebar {
-    width: 100%; 
-    position: relative; 
-    transform: translateX(0); 
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: -100%; /* 初始時隱藏側邊欄 */
+    transform: translateX(0);
+  }
+
+  .sidebar.active {
+    left: 0; /* 顯示側邊欄時從左側滑出 */
   }
 
   .main-content {
-    margin-left: 0; 
-    padding: 10px; 
+    margin-left: 0; /* 沒有側邊欄時，讓內容區塊占滿整個頁面 */
+    padding: 10px;
   }
 
   .restaurant-slider {
-    flex-direction: column; 
+    flex-direction: column;
   }
 
   .restaurant-item {
     min-width: 100%;
-    height: auto; 
-    margin-bottom: 10px; 
+    height: auto;
+    margin-bottom: 10px;
   }
 
-}
-
-@media (max-width: 768px) {
   .food-name {
-    font-size: 14px;  /* 在小螢幕上縮小字體 */
+    font-size: 14px;
   }
 }
 </style>

@@ -2,78 +2,130 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color: rgba(0, 0, 0, 0.87);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: auto;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
+/* 基本背景漸層設定 */
 body {
   margin: 0;
+  padding: 0;
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
+  background: linear-gradient(135deg, #d0efff, #c3a9fc, #fde3e9); /* 三種淺色系背景漸層 */
+  overflow-x: auto;
 }
 
+/* 主要容器 */
+#app {
+  max-width: 1500px;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #d0efff, #c3a9fc, #fde3e9); /* 三種淺色系背景漸層 */
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+/* 卡片背景 */
+.card {
+  padding: 2em;
+  background: linear-gradient(135deg, #d0efff, #c3a9fc, #fde3e9); /* 三種淺色系背景漸層 */
+  border-radius: 1px;
+}
+
+/* 標題樣式 */
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 3em;
+  color: #4a90e2; /* 淺藍色 */
+  margin-bottom: 1rem;
 }
 
+/* 連結樣式 */
+a {
+  font-weight: 500;
+  color: #4a90e2; /* 淺藍色 */
+  text-decoration: none;
+}
+
+a:hover {
+  color: #2a7cc8; 
+}
+
+/* 按鈕樣式 */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  border: none;
+  background-color: #4a90e2;
+  color: #fff;
+  border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
-.card {
-  padding: 2em;
+
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
+/* 亮色模式背景漸層 */
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
+    color: #333;
     background-color: #ffffff;
   }
-  a:hover {
-    color: #747bff;
+  
+  body {
+    background: linear-gradient(135deg, #d0efff, #c3a9fc, #fde3e9); 
   }
+  
+  #app {
+    background: linear-gradient(135deg,  #61efff,#ffffff, #ffbbcb); 
+  }
+  
+  a:hover {
+    color: #a1f78e; 
+  }
+  
   button {
-    background-color: #f9f9f9;
+    background-color: #ffffff;
+    color: #000000;
   }
 }
+
+/* 暗色模式背景漸層 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f1f1f1;
+    background-color: #222222;
+  }
+  
+  body {
+    background: linear-gradient(135deg, #d0efff, #c3a9fc, #fde3e9); 
+  }
+
+  #app {
+    background: linear-gradient(135deg, #ffffff, #8bebf6, #fde3e9); 
+  }
+  
+  a:hover {
+    color: #2a7cc8; 
+  }
+  
+  button {
+    background: linear-gradient(135deg, #d0efff, #c3a9fc, #fde3e9); /* 三種淺色系背景漸層 */
+    color: #fff;
+  }
+}
+

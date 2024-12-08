@@ -13,11 +13,15 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import Unauthorized
 import traceback
 from sqlalchemy import func
+from urllib.parse import unquote
+from urllib.parse import quote
+
+
+app = Flask(__name__, static_url_path='/static', static_folder='public')
 import json
 
 
-app = Flask(__name__)
-CORS(app)  # 允許所有來源的請求
+CORS(app,origins="http://localhost:5173")  # 允許所有來源的請求
 # 配置 CORS，允許來自前端的跨域請求並支持攜帶憑證（如 cookies）
 CORS(app, supports_credentials=True, origins=["http://localhost:5173/"])
 app.config['JWT_SECRET_KEY'] = "ckdsojcaojcosajcicdsji" 
@@ -71,6 +75,9 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
     
+     #diet_logs = db.relationship('DietLog', backref='user', lazy=True)
+
+    
 # 設置日誌
 logging.basicConfig(level=logging.DEBUG)
 
@@ -92,6 +99,7 @@ class Subcat(db.Model):
     maincat_id = db.Column(db.Integer, db.ForeignKey("maincat.id"), nullable=False)
     maincat = db.relationship("MainCategory", back_populates="subcats")  
     foods = db.relationship("Food", back_populates="subcat")  # 反向關聯
+    img_url = db.Column(db.String(255), nullable=True)  # 新增 img_url 欄位
 # 定義食物的資料庫模型
 class Food(db.Model):
     __tablename__ = 'foods' 
@@ -107,6 +115,7 @@ class Food(db.Model):
     subcat = db.relationship("Subcat", back_populates="foods")  # 反向關聯
     img_url = db.Column(db.String(255), nullable=True)  
 
+# 修改 Comment 表
 class Comment(db.Model):
     __tablename__ = 'comment'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -123,12 +132,14 @@ class Comment(db.Model):
     parent_comment = db.relationship('Comment', remote_side=[id])  # 回覆的父評論
     user = db.relationship('User', backref=db.backref('comments', lazy=True))  # 關聯到 User 表，取得該用戶所有評論
 
+
 #Like 模型定義
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 
 #歷史訂單
@@ -222,39 +233,27 @@ def get_subcats(maincat_id):
 # 根據 Subcat 名稱查詢菜單
 @app.route('/menu/<string:subcat_name>', methods=['GET'])
 def get_menu(subcat_name):
-    subcat = Subcat.query.filter_by(name=subcat_name).first()
-    if subcat:
-        foods = Food.query.filter_by(subcat_id=subcat.id).all()
-        menu = [{
-            "id": food.id,
-            "name": food.name,
-            "price": food.price,
-            "carbo": food.carbo,
-            "protein": food.protein,
-            "fat": food.fat,
-            "calories": food.calories,
-            "score": food.score,
-            "img_url": food.img_url  # 圖片 URL
-        } for food in foods]
-        return jsonify(menu)
-    else:
-        return jsonify({"message": "餐廳區域不存在"}), 404
+    try:
+        subcat = Subcat.query.filter_by(name=subcat_name).first()
+        if subcat:
+            foods = Food.query.filter_by(subcat_id=subcat.id).all()
+            menu = [{
+                "id": food.id,
+                "name": food.name,
+                "price": food.price,
+                "carbo": food.carbo,
+                "protein": food.protein,
+                "fat": food.fat,
+                "calories": food.calories,
+                "score": food.score,
+                "img_url": food.img_url  # 圖片 URL
+            } for food in foods]
+            return jsonify(menu)
+        else:
+            return jsonify({"message": "餐廳區域不存在"}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
-# 獲取餐廳詳細資料的路由（GET /subcat/{id}）：
-@app.route('/api/subcat/<int:id>', methods=['GET'])
-def get_store_details(id):
-    subcat = Subcat.query.get(id)  # 根據 subcat_id 獲取餐廳詳細資料
-    if subcat:
-        store_data = {
-            "id": subcat.id,
-            "name": subcat.name,
-            "address": subcat.address,
-            "type": subcat.type
-        }
-        return jsonify(store_data), 200
-    else:
-        return jsonify({"message": "餐廳不存在"}), 404
-
 
 # 建立 API 路由來取得優惠資料
 @app.route('/offers', methods=['GET'])
@@ -273,19 +272,23 @@ def register():
     password = data.get('password')
 
     if not username or not email or not password:
-        return jsonify({'message': '所有欄位都是必需的'}), 400
+        return jsonify({'success': False, 'message': '所有欄位都是必需的'}), 400
 
     # 檢查用戶名或郵箱是否已存在
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'message': '用戶名或郵箱已被使用'}), 400
+        return jsonify({'success': False, 'message': '用戶名或郵箱已被使用'}), 400
 
     # 創建新用戶
     new_user = User(username=username, email=email)
     new_user.set_password(password)
 
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({'message': '註冊成功'}), 201
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': '註冊成功'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': '註冊失敗', 'error': str(e)}), 500
 
 
 #登入(更新)
@@ -357,7 +360,7 @@ def invalid_token_callback(error):
 def missing_token_callback(error):
     return jsonify({"msg": "請提供有效的 token"}), 401
 
-# 獲取某天的紀錄######################################################
+# 獲取某天的紀錄
 @app.route('/api/log/<date>', methods=['GET'])
 @jwt_required()
 def get_daily_log(date):
@@ -396,6 +399,9 @@ def update_daily_log():
     foods = data.get("foods", [])
     print(foods)
 
+    # 僅允許當天更新
+    # if log_date != today_date:
+    #     return jsonify({'error': 'Only today\'s record can be updated.'}), 403
     # 查找當天日誌，若不存在則創建
     log = DietLog.query.filter_by(user_id=current_user, log_date=log_date).first()
     if not log:
@@ -433,7 +439,7 @@ def update_daily_log():
     log.foods = updated_foods
     db.session.commit()
     return jsonify({"message": "Food added to log successfully"}), 200
-#################################################################################
+
 
 #食物分類
 @app.route('/foods', methods=['GET'])
@@ -517,105 +523,142 @@ from urllib.parse import quote
 # 查詢每家餐廳的平均評分並排序
 @app.route('/api/top-restaurants', methods=['GET'])
 def get_top_restaurants():
-   
     top_restaurants = db.session.query(
         Subcat.id,
         Subcat.name,
         Subcat.address,
+        Subcat.img_url,
         func.avg(Food.score).label('avg_score')
-    ).join(Food, Subcat.id == Food.subcat_id)  # 連接餐廳與菜品
-    
-    # 此處不需要反斜線，直接將每個方法放在單獨一行
-    top_restaurants = top_restaurants.group_by(Subcat.id) \
-                                     .order_by(func.avg(Food.score).desc()) \
-                                     .limit(5).all()
+    ).join(Food, Subcat.id == Food.subcat_id) \
+     .group_by(Subcat.id) \
+     .order_by(func.avg(Food.score).desc()) \
+     .limit(5).all()
 
-    # 組織回傳資料
     restaurants = []
     for restaurant in top_restaurants:
-        # 查詢餐廳的菜品
-        foods = db.session.query(Food.name, Food.score).filter(Food.subcat_id == restaurant.id).all()
         restaurant_data = {
+            'id': restaurant.id,
             'name': restaurant.name,
             'address': restaurant.address,
             'avg_score': round(restaurant.avg_score, 2),
-            'foods': [{'name': food.name, 'score': food.score} for food in foods]
+            'img_url': restaurant.img_url,  # 返回圖片檔名
         }
         restaurants.append(restaurant_data)
 
-    return jsonify(restaurants)  # 返回 JSON 格式的資料
+    return jsonify(restaurants)
+
+
+
+# 獲取餐廳詳細資料的路由
+@app.route('/api/subcat/id/<int:id>', methods=['GET'])
+def get_store_details_by_id(id):
+    try:
+        print(f"請求的餐廳 ID: {id}")  # 調試訊息，確認 ID 是否正確
+        subcat = Subcat.query.get(id)  # 根據 ID 查詢餐廳資料
+        if subcat:
+            store_data = {
+                "id": subcat.id,
+                "name": subcat.name,
+                "address": subcat.address,
+                "type": subcat.type,
+                "img_url": subcat.img_url  # 加入 img_url 屬性
+            }
+            print(f"找到的餐廳資料: {store_data}")  # 顯示查詢結果
+            return jsonify(store_data), 200
+        else:
+            return jsonify({"message": "餐廳不存在"}), 404
+    except Exception as e:
+        print(f"發生錯誤: {e}")  # 顯示錯誤
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 # 評論
 @app.route('/api/comments/store/<int:food_id>', methods=['GET'])
 def get_comments_by_store(food_id):
-    # 輸出收到的 food_id
-    logging.info(f"Received food_id: {food_id}")
+    try:
+        # 輸出收到的 food_id
+        logging.info(f"Received food_id: {food_id}")
 
-    # 查詢符合 food_id 的評論
-    comments = Comment.query.filter_by(food_id=food_id).all()
+        # 查詢符合 food_id 的評論
+        comments = Comment.query.filter_by(food_id=food_id).all()
 
-    # 若找不到評論，返回空列表
-    if not comments:
-        return jsonify([]), 200  # 返回空列表，而不是 404
+        # 若找不到評論，返回空列表
+        if not comments:
+            return jsonify([]), 200  # 返回空列表，而不是 404
 
-    result = []
-    for comment in comments:
-        result.append({
-            'id': comment.id,
-            'user': {
-                'id': comment.user.id if comment.user else None,
-                'username': comment.user.username if comment.user else None,
-                'email': comment.user.email if comment.user else None,
-                'profile_picture': comment.user.profile_picture if comment.user and hasattr(comment.user, 'profile_picture') else None
-            },
-            'data': comment.data,
-            'likes': comment.likes,
-            'replies': comment.replies,
-            'food_id': comment.food_id,
-            'parent_comment_id': comment.parent_comment_id
-        })
+        result = []
+        for comment in comments:
+            result.append({
+                'id': comment.id,
+                'user': {
+                    'id': comment.user.id if comment.user else None,
+                    'username': comment.user.username if comment.user else None,
+                    'email': comment.user.email if comment.user else None,
+                    'profile_picture': comment.user.profile_picture if comment.user and hasattr(comment.user, 'profile_picture') else None
+                },
+                'data': comment.data,
+                'likes': comment.likes,
+                'replies': comment.replies,
+                'food_id': comment.food_id,
+                'parent_comment_id': comment.parent_comment_id
+            })
 
-    return jsonify(result), 200
+        return jsonify(result), 200
+
+    except Exception as e:
+        logging.error(f"Error fetching comments: {str(e)}")
+        return jsonify({'message': 'Internal Server Error'}), 500
 
 # 點讚
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
 @jwt_required()  # 驗證用戶是否登入
 def like_comment(comment_id):
-    comment = Comment.query.get(comment_id)
-    if not comment:
-        return jsonify({'message': 'Comment not found'}), 404  # 如果沒有找到評論
-    
-    comment.likes += 1  # 增加點讚數
-    db.session.commit()  # 提交更改
-    return jsonify({'likes': comment.likes}), 200  # 返回更新後的點讚數
+    try:
+        comment = Comment.query.get(comment_id)
+        if not comment:
+            return jsonify({'message': 'Comment not found'}), 404  # 如果沒有找到評論
+        
+        comment.likes += 1  # 增加點讚數
+        db.session.commit()  # 提交更改
+        return jsonify({'likes': comment.likes}), 200  # 返回更新後的點讚數
+    except Exception as e:
+        logging.error(f"Error occurred: {str(e)}")  # 記錄錯誤
+        return jsonify({'error': str(e)}), 500  # 捕獲並返回任何錯誤
 
 # 回覆評論
 @app.route('/api/comments/reply/<int:parent_comment_id>', methods=['POST'])
 @jwt_required()  
 def reply_to_comment(current_user, parent_comment_id):
 
-    # 你的處理邏輯
-    parent_comment = Comment.query.filter_by(id=parent_comment_id).first()
-    if not parent_comment:
-        return jsonify({'message': 'Parent comment not found!'}), 404
+    try:
+        # 你的處理邏輯
+        parent_comment = Comment.query.filter_by(id=parent_comment_id).first()
+        if not parent_comment:
+            return jsonify({'message': 'Parent comment not found!'}), 404
 
-    data = request.get_json()
-    reply_content = data.get('reply', '').strip()
-    if not reply_content:
-        return jsonify({'message': 'Reply content cannot be empty.'}), 400
+        data = request.get_json()
+        reply_content = data.get('reply', '').strip()
+        if not reply_content:
+            return jsonify({'message': 'Reply content cannot be empty.'}), 400
 
-    food_id = parent_comment.food_id
-    reply = Comment(
-        user_id=current_user.id,
-        data=reply_content,
-        food_id=food_id,
-        parent_comment_id=parent_comment.id
-    )
-    db.session.add(reply)
-    parent_comment.replies += 1
-    db.session.commit()
+        food_id = parent_comment.food_id
+        reply = Comment(
+            user_id=current_user.id,
+            data=reply_content,
+            food_id=food_id,
+            parent_comment_id=parent_comment.id
+        )
+        db.session.add(reply)
+        parent_comment.replies += 1
+        db.session.commit()
 
-    return jsonify({'message': 'Reply posted successfully'}), 201
+        return jsonify({'message': 'Reply posted successfully'}), 201
+    except Exception as e:
+        logging.error(f"Error while posting reply: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
 
 #編輯評論  用戶可以編輯自己的評論，但只能編輯自己發表的評論。
 @app.route('/api/comments/<int:comment_id>', methods=['PUT'])
@@ -642,13 +685,15 @@ def edit_comment(comment_id):
         return jsonify({'message': 'No changes detected in the comment.'}), 200
 
     # 更新評論內容
-    comment.data = new_content
-    db.session.commit()
-    return jsonify({'message': 'Comment updated successfully'}), 200
-
-
-
-#保存訂單紀錄
+    try:
+        comment.data = new_content
+        db.session.commit()
+        return jsonify({'message': 'Comment updated successfully'}), 200
+    except Exception as e:
+        # 捕獲任何資料庫錯誤並返回錯誤訊息
+        db.session.rollback()  # 若有錯誤，回滾更改
+        return jsonify({'message': f'Error updating comment: {str(e)}'}), 500
+# 結帳
 @app.route('/checkout', methods=['POST'])
 @jwt_required()  # 用戶可選擇是否提供 JWT
 def checkout():
@@ -684,6 +729,7 @@ def checkout():
 
     # 若未登入，僅返回成功訊息，不儲存至歷史記錄
     return jsonify({"message": "結帳成功（訪客身份，未儲存訂單）"}), 200
+
 
 #顯示歷史訂單
 @app.route('/history', methods=['GET','POST'])
@@ -725,7 +771,7 @@ def get_history():
             record_time = record_time.replace(tzinfo=timezone.utc)
 
         # 如果訂單是當天的，累加營養數據    
-        if start_of_two_days_ago <= record_time <= end_of_day:
+        if start_of_two_days_ago <= record_time <= end_of_today:
             total_carbo += food.carbo
             total_protein += food.protein
             total_fat += food.fat
@@ -753,6 +799,8 @@ def get_history():
         }
     }), 200
 
+
+# 推薦
 @app.route('/api/recommendations', methods=['GET'])
 @jwt_required()  # 用戶必須登入
 def get_recommendations():
@@ -761,36 +809,30 @@ def get_recommendations():
     user = User.query.filter_by(id=current_user).first()
     if not user:
         return jsonify({"error": "用戶不存在"}), 403
-
     # 計算日期範圍：前天開始到今天結束
     now = datetime.now(timezone.utc)
     start_of_range = (now - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_range = now.replace(hour=23, minute=59, second=59, microsecond=999999)
-
     # 查詢範圍內的飲食日誌
     diet_logs = DietLog.query.filter(
         DietLog.user_id == user.id,
         DietLog.log_date >= start_of_range.date(),
         DietLog.log_date <= end_of_range.date()
     ).all()
-
     # 查詢範圍內的歷史訂單
     records = Record.query.filter(
         Record.user_id == user.id,
         Record.timestamp >= start_of_range,
         Record.timestamp <= end_of_range
     ).all()
-
     # 總結範圍內的營養攝取數據
     total_carbs = total_protein = total_fat = total_calories = 0
-
     # 加上日誌數據
     for log in diet_logs:
         total_carbs += log.carbs
         total_protein += log.protein
         total_fat += log.fat
         total_calories += log.calories
-
     # 加上歷史訂單的營養數據
     for record in records:
         food = Food.query.get(record.info_id)
@@ -799,7 +841,6 @@ def get_recommendations():
             total_protein += food.protein
             total_fat += food.fat
             total_calories += food.calories
-
     # 定義每日營養建議值（假設建議值是按天計算，需乘以2）
     recommended_intake = {
         "carbs": 300 * 2,  # 克
@@ -807,7 +848,6 @@ def get_recommendations():
         "fat": 70 * 2,      # 克
         "calories": 2000 * 2  # 千卡
     }
-
     # 計算缺口
     deficits = {
         "carbs": max(0, recommended_intake["carbs"] - total_carbs),
@@ -815,7 +855,6 @@ def get_recommendations():
         "fat": max(0, recommended_intake["fat"] - total_fat),
         "calories": max(0, recommended_intake["calories"] - total_calories),
     }
-
     # 推薦食物
     recommendations = []
     if any(value > 0 for value in deficits.values()):  # 若有缺口則推薦
@@ -826,7 +865,6 @@ def get_recommendations():
             protein = food.protein or 0
             fat = food.fat or 0
             calories = food.calories or 0
-
             if (carbo >= deficits["carbs"] * 0.3 or
                 protein >= deficits["protein"] * 0.3 or
                 fat >= deficits["fat"] * 0.3 or
@@ -839,10 +877,8 @@ def get_recommendations():
                     "protein": food.protein,
                     "fat": food.fat,
                     "calories": food.calories,
-                    "price": food.price,
                     "img_url": food.img_url
                 })
-
     return jsonify({
         "range": {
             "start": start_of_range.isoformat(),
@@ -857,7 +893,10 @@ def get_recommendations():
         "deficits": deficits,
         "recommendations": recommendations
     }), 200
-    
+
+
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # 自動創建資料表

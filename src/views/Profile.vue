@@ -60,66 +60,90 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .profile-container {
-  max-width: 500px; 
-  margin: 0 auto; 
-  padding: 20px; 
-  background-color: #4b2d2dfd; 
-  border-radius: 20px; /* 邊框圓角 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 30px;
+  background: linear-gradient(135deg, #45cca8, #68ff46); 
+  border-radius: 20px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); 
 }
 
 h1 {
-  text-align: center; /* 標題置中 */
-  color: #fff9f2; /* 標題顏色 */
+  text-align: center;
+  color: #fff;
+  font-size: 2.2rem;
+  margin-bottom: 30px;
+  font-weight: 700;
 }
 
 .profile-form {
-  display: flex; /* 使用彈性布局 */
-  flex-direction: column; /* 直列方向 */
+  display: flex;
+  flex-direction: column;
 }
 
 .form-group {
-  margin-bottom: 15px;
-  color: #ffffff;
+  margin-bottom: 20px;
+  color: #f1f1f1;
 }
 
 label {
-  margin-bottom: 5px; 
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+  color: #fff; 
 }
 
 input {
-  padding: 10px; 
-  border: 1px solid #ccc; 
-  border-radius: 4px; 
-  width: 100%; 
-  box-sizing: border-box; 
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+input:focus {
+  border-color: #D2691E; 
+  box-shadow: 0 0 8px rgba(210, 105, 30, 0.5); 
 }
 
 .save-button {
-  padding: 10px; 
-  background-color: #28a745; 
-  color: white;
-  border: none; 
-  border-radius: 4px;
+  padding: 12px;
+  background-color: #f7e5e5; 
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s; 
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .save-button:hover {
-  background-color: #218838; 
+  background: linear-gradient(135deg, #45cca8, #2df600); 
+  transform: translateY(-2px);
+}
+
+.save-button:active {
+  transform: translateY(2px);
 }
 
 .back-link {
   display: inline-block;
-  margin-top: 20px; 
-  text-align: center;  
-  color: #007bff; 
-  text-decoration: none; 
+  margin-top: 20px;
+  text-align: center;
+  color: #fff;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: color 0.3s;
 }
 
 .back-link:hover {
-  text-decoration: underline; 
+  text-decoration: underline;
+  color: #D2691E; /* 懸停時文字顏色改為暖橙色 */
 }
 </style>

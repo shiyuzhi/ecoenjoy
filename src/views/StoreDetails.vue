@@ -1,136 +1,128 @@
 <template>
-    <div class="store-details">
-      <!-- 返回按鈕 -->
-      <button @click="$router.back()" class="back-button">返回</button>
-  
-      <!-- 餐廳資訊 -->
-      <div v-if="restaurant">
-        <h2>{{ restaurant.name }}</h2>
-        <p>地址: {{ restaurant.address }}</p>
-        <p>類型: {{ restaurant.type }}</p>
-      </div>
-      <p v-else>正在加載餐廳資料...</p>
-  
-      <!-- 評論列表 -->
-      <div v-if="comments.length">
-        <h3>評論</h3>
-        <ul class="comment-list">
-          <li v-for="comment in comments" :key="comment.id" class="comment-item">
-            <p><strong>{{ comment.user }}</strong>: {{ comment.data }}</p>
-            <div class="comment-actions">
-              <span>讚: {{ comment.likes }}</span>
-              <button @click="likeComment(comment.id)" class="like-button">點讚</button>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <p v-else-if="restaurant">尚無評論</p>
+  <div class="store-details">
+    <!-- 返回按鈕 -->
+    <button @click="goBack" class="back-button">返回</button>
+    <hr />
+    <!-- 餐廳詳細資訊顯示 -->
+    <div class="image-container">
+      <img v-if="restaurant && restaurant.img_url" :src="`/store/${restaurant.img_url}`" :alt="restaurant.name" class="restaurant-image" />
     </div>
-  </template>
-  
-  <script>
-  import axios from "axios";
-  
+    <h2>{{ restaurant ? restaurant.name : '餐廳名稱' }}</h2>
+    <p>{{ restaurant ? restaurant.address : '餐廳地址' }}</p>
+    <p>{{ restaurant ? restaurant.type : '餐廳類型' }}</p>
+  </div>
+</template>
+
+<script>
+  import axios from 'axios';
+
   export default {
-    name: "StoreDetails",
-    props: {
-      id: {
-        type: String,
-        required: true,
-      },
-    },
+    inject: ['selectedRestaurant'],
     data() {
       return {
-        restaurant: null, // 餐廳資料
-        comments: [], // 評論資料
+        restaurant: null,
       };
     },
+    created() {
+      // 檢查是否有從父組件接收資料
+      if (this.selectedRestaurant) {
+        this.restaurant = this.selectedRestaurant;
+      } else {
+        const restaurantId = this.$route.params.id; // 獲取餐廳 ID
+        if (restaurantId) {
+          this.fetchRestaurantDetails(restaurantId); // 根據 ID 發送請求
+        } else {
+          console.error('無效的餐廳 ID');
+        }
+      }
+    },
     methods: {
-      // 獲取餐廳詳細資訊與評論
-      async fetchDetails() {
+      // 獲取餐廳詳細資訊
+      async fetchRestaurantDetails(id) {
         try {
-          // 獲取餐廳詳細資料
-          const restaurantResponse = await axios.get(`/subcat/${this.id}`);
-          this.restaurant = restaurantResponse.data;
-  
-          // 獲取餐廳的評論
-          const commentsResponse = await axios.get(`/comments/${this.id}`);
-          this.comments = commentsResponse.data;
+          const response = await axios.get(`http://127.0.0.1:5000/api/subcat/id/${id}`);
+          this.restaurant = response.data;  // 儲存餐廳資料
         } catch (error) {
-          console.error("加載資料失敗:", error);
+          console.error('餐廳資料加載失敗', error);
         }
       },
-      // 點讚功能
-      async likeComment(commentId) {
-        try {
-          await axios.post(`/comments/like/${commentId}`);
-          const comment = this.comments.find((c) => c.id === commentId);
-          if (comment) comment.likes++;
-        } catch (error) {
-          console.error("點讚失敗:", error);
-        }
-      },
+
+      // 返回上一頁
+      goBack() {
+        this.$router.go(-1);
+      }
     },
+
     watch: {
-      // 當 ID 改變時重新加載資料
-      id() {
-        this.fetchDetails();
-      },
-    },
-    mounted() {
-      this.fetchDetails(); // 初次加載時獲取資料
-    },
+      // 監控路由參數，當餐廳 ID 更新時重新發送請求
+      '$route.params.id': function(newId) {
+        this.fetchRestaurantDetails(newId);
+      }
+    }
   };
-  </script>
-  
-  <style scoped>
+</script>
+
+<style scoped>
   .store-details {
-    padding: 20px;
     font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background: linear-gradient(45deg, #6cc9fb, #f9feff, #fda3ec);
   }
   
   .back-button {
-    background-color: #007bff;
-    color: #fff;
+    background: linear-gradient(45deg, #0670e1, #27e3d4);
+    color: white;
     border: none;
-    padding: 10px 15px;
-    margin-bottom: 15px;
+    padding: 12px 24px;
+    font-size: 16px;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
   }
   
   .back-button:hover {
-    background-color: #0056b3;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(45deg, #0056b3, #009d91);
   }
   
-  .comment-list {
-    list-style-type: none;
-    padding: 0;
+  .image-container {
+    text-align: center;
+    margin-bottom: 20px;
   }
   
-  .comment-item {
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
+  .restaurant-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 4px solid #ddd; /* 餐廳照片的邊框 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 增加陰影效果 */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   
-  .comment-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  .restaurant-image:hover {
+    transform: scale(1.05); /* 當圖片懸停時稍微放大 */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* 改變陰影效果 */
   }
   
-  .like-button {
-    background-color: #28a745;
-    color: #fff;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 5px;
+  h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-top: 0;
+    color: #333;
   }
   
-  .like-button:hover {
-    background-color: #218838;
+  p {
+    text-align: center;
+    font-size: 16px;
+    color: #666;
+    margin: 5px 0;
   }
 </style>
-  

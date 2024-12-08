@@ -109,66 +109,82 @@
       };
     }
   };
-  </script>
-  
-  <style scoped>
+</script>
+
+<style scoped>
   .nutrition-query-container {
-    max-width: 500px;
+    max-width: 600px;
     margin: 0 auto;
     padding: 50px;
-    background-color: #c8fff9;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #00bcd4, #6ae46e); 
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 1s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
   }
   
   .nutrition-title {
     text-align: center;
-    font-size: 24px;
+    font-size: 28px;
     margin-bottom: 30px;
-    color: #2e1515;
+    color: #f5f0f0;
+    font-weight: 700;
   }
   
   .nutrition-field {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 18px;
   }
   
   .nutrition-field label {
     flex: 1;
     font-size: 18px;
-    color: #555;
+    color: #ffffff;
+    font-weight: 500;
   }
   
   .nutrition-button {
-    padding: 10px 15px;
+    padding: 12px 18px;
     border: none;
-    border-radius: 4px;
-    background-color: #4caf50;
+    border-radius: 8px;
+    background-color: #080402; 
     color: white;
     font-size: 16px;
     cursor: pointer;
-    margin-left: 10px;
-    transition: background-color 0.3s;
+    margin-left: 12px;
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 5px 15px rgba(255, 87, 34, 0.4);
   }
   
   .nutrition-button:hover {
-    background-color: #45a049;
+    background-color: #e64a19; 
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(255, 87, 34, 0.6);
   }
   
   .selected {
-    background: linear-gradient(to right, #81b5ea, #41c44c);
+    background: linear-gradient(to right, #020501e3, #100202e3);
     color: white;
+    font-weight: 600;
   }
   
   .query-results {
-    margin-top: 20px;
+    margin-top: 15px;
   }
   
   .query-results h4 {
-    font-size: 20px;
-    margin-bottom: 10px;
-    color: #333;
+    font-size: 22px;
+    margin-bottom: 15px;
+    color: #ffffff;
   }
   
   .query-results ul {
@@ -177,15 +193,26 @@
   }
   
   .query-results li {
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
+    padding: 20px;
+    background-color: #ffffff;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    transition: background-color 0.3s ease, box-shadow 0.2s;
+  }
+  
+  .query-results li:hover {
+    background-color: #b2dfdb;
+    border-color: #00bcd4;
+    box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
   }
   
   .no-results {
     text-align: center;
-    color: #090505;
+    color: #000000;
     font-size: 18px;
-    margin-top: 20px;
+    margin-top: 25px;
+    font-weight: 500;
   }
 </style>
   

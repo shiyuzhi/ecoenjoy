@@ -3,44 +3,20 @@
     <h2>外送</h2>
     <select v-model="selectedRestaurant" @change="fetchMenu" class="restaurant-select">
       <option disabled value="">選擇餐廳</option>
-      <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">
-        {{ restaurant.name }}
-      </option>
+      <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.name">{{ restaurant.name }}</option>
     </select>
 
     <div v-if="menu.length && !loadingMenu" class="menu-items">
+      <button @click="viewStore(selectedRestaurant)" class="view-store-button">餐廳資訊</button>
       <h3>菜單</h3>
       <div v-for="item in menu" :key="item.id" class="menu-item">
         <img :src="item.img_url" alt="菜品圖片" class="menu-image" />
         <div class="item-details">
           <h4>{{ item.name }}</h4>
           <p>{{ item.description }}</p>
-          <span class="price">{{ item.price }} 元</span>
-
-          <!-- 加入購物車的按鈕 -->
+          <span class="price">{{ Math.round(item.price) }} 元</span>
+          <button @click="viewComments(item)" class="view-comments-button">查看評論</button>
           <button @click="addToCart(item)" class="add-to-cart-button">加入購物車</button>
-          
-            <!-- 顯示評論區 -->
-          <div v-if="item.reviews && item.reviews.length">
-            <h5>評論</h5>
-            <div v-for="review in item.reviews" :key="review.id" class="review">
-              <p><strong>{{ review.user_name }}:</strong> {{ review.content }}</p>
-              <div class="rating">
-                <span v-for="n in review.rating" :key="n">⭐</span> 
-              </div>
-            </div>
-            <button @click="toggleShowAllReviews(item)" v-if="!item.showAllReviews">
-              查看更多評論
-            </button>
-            <div v-if="item.showAllReviews">
-              <!-- 顯示更多評論 -->
-              <button @click="toggleShowAllReviews(item)">收起評論</button>
-            </div>
-          </div>
-          <!-- 顯示寫評論的功能 -->
-          <div v-if="isLoggedIn">
-            <button @click="openReviewModal(item)">寫評論</button>
-          </div>
         </div>
       </div>
     </div>
@@ -63,8 +39,27 @@
         <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
       </div>
     </div>
+
+    <div v-if="showCommentsModal" class="comments-modal">
+      <div class="modal-content">
+        <h3>{{ selectedMenuItem.name }} 的評論</h3>
+        <div v-if="selectedMenuItem.comments.length === 0" class="no-comments-message">
+          <p>目前還沒評論喔！來第一個留言吧！</p>
+        </div>
+        <div v-else class="comments-container">
+          <ul>
+            <li v-for="(comment, index) in selectedMenuItem.comments" :key="index" class="comment-card">
+              <p class="comment-user"><strong>{{ comment.user.username }}</strong>: <span class="comment-text">{{ comment.data }}</span></p>
+              <div class="comment-meta"><span>👍 {{ comment.likes }} 喜歡</span> | <span>💬 {{ comment.replies }} 回覆</span></div>
+            </li>
+          </ul>
+        </div>
+        <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
+      </div>
+    </div>
   </div>
 </template>
+
 
 <script>
   import axios from "axios";
@@ -86,6 +81,11 @@
         isLoggedIn: false, // 是否已登入
         token: null, // 儲存 JWT token（若登入）
         userId: null, // 用戶 ID (可從登入時設置)
+        showCommentsModal: false, // 控制評論模態框顯示
+        selectedMenuItem: null, // 當前選擇的菜品
+        showCommentsModal: false, // 控制評論模態框顯示
+        selectedMenuItem: null, // 當前選擇的菜品
+        newComment: '', // 儲存用戶新寫的評論
       };
     },
 
@@ -93,8 +93,7 @@
       // 嘗試從 localStorage 載入登入狀態
       const userToken = localStorage.getItem("token");
       const userId = localStorage.getItem("id");
-      console.log(userToken)
-      console.log(userId)
+
       if (userToken && userId) {
         this.isLoggedIn = true;
         this.token = userToken;
@@ -301,7 +300,6 @@
 
 
 
-
 <style scoped>
 .delivery {
   padding: 20px;
@@ -349,12 +347,13 @@
 }
 
 .price {
+  margin-right: 20px;
   font-weight: bold;
   color: #d9534f;
 }
 
 .add-to-cart-button {
-  background: linear-gradient(to right, #5cb85c, #4cae4c); /* 漸變綠色 */
+  background: linear-gradient(to right, #8ee58e, #4cae4c); 
   color: white;
   border: none;
   padding: 10px;
@@ -377,7 +376,8 @@ h3 {
 .cart-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
 }
 
 /* 表單樣式 */
@@ -411,12 +411,12 @@ h3 {
   font-size: 16px;
   font-weight: bold;
   color: white;
-  background-color: #3897ea; /* 顯眼的橘色背景 */
+  background-color: #3897ea; 
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 增加立體感 */
-  transition: all 0.3s ease; /* 平滑動畫效果 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+  transition: all 0.3s ease;
 }
 
 .view-store-button:hover {
@@ -430,5 +430,102 @@ h3 {
   box-shadow: none; 
   transform: scale(0.95); 
 }
+
+/* 評論模態框 */
+.comments-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5); /* 加深背景色 */
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 90%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.5s ease-out;
+  border-left: 5px solid #5c6bc0; /* 加入顏色條 */
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comments-container {
+  margin-top: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.comment-card {
+  background: #f4f4f9;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-left: 5px solid #ff4081; /* 加入顏色條 */
+}
+
+.comment-card:hover {
+  transform: translateX(7px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  border-left: 5px solid #ff5722; /* 增加滑鼠懸停效果 */
+}
+
+.comment-user {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #2f3b52;
+  margin-bottom: 5px;
+}
+
+.comment-text {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.comment-meta {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.close-modal-button {
+  background-color: #1e88e5;
+  color: white;
+  padding: 12px 25px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 50px; /* 圓形按鈕 */
+  cursor: pointer;
+  margin-top: 30px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.close-modal-button:hover {
+  background-color: #1565c0;
+  transform: scale(1.05); /* 按鈕放大效果 */
+}
+
+
 
 </style>
