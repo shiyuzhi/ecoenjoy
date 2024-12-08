@@ -17,7 +17,7 @@ Content-Type: application/json
 #測試獲取token
 ### 受保護的數據請求
 
-GET  http://localhost:5000/api/top-restaurants-menu
+GET   http://localhost:5000/api/comments/store/1 
 
 
 
