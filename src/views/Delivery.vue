@@ -39,39 +39,6 @@
         <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
       </div>
     </div>
-
-    <div class="order-summary" v-if="cart.length">
-      <h3>訂單總覽</h3>
-      <div class="cart-item" v-for="(item, index) in cart" :key="index">
-        <span>{{ item.name }} - {{ item.quantity }} x {{ Math.round(item.price) }} 元</span>
-        <button @click="removeFromCart(index)" class="remove-button">移除</button>
-      </div>
-      <p class="total-price">總價: {{ totalPrice }} 元</p>
-      <h4>送餐資訊確認</h4>
-      <div class="form-group">
-        <label for="delivery-name">取餐人姓名：</label>
-        <input type="text" id="delivery-name" v-model="deliveryName" placeholder="輸入姓名" required />
-      </div>
-      <div class="form-group">
-        <label for="delivery-address">外送地址：</label>
-        <input type="text" id="delivery-address" v-model="deliveryAddress" placeholder="輸入外送地址" required />
-      </div>
-      <div class="form-group">
-        <label for="delivery-phone">電話：</label>
-        <input type="text" id="delivery-phone" v-model="deliveryPhone" placeholder="輸入電話" required />
-      </div>
-      <div class="payment-method">
-        <button @click="paymentMethod = 'cash'" :class="{ 'active': paymentMethod === 'cash' }">現金</button>
-        <button @click="paymentMethod = 'credit_card'" :class="{ 'active': paymentMethod === 'credit_card' }">信用卡</button>
-      </div>
-      <div v-if="paymentMethod === 'credit_card'" class="form-group">
-        <label for="credit-card-number">信用卡號：</label>
-        <input type="text" id="credit-card-number" v-model="creditCardNumber" placeholder="輸入信用卡號" />
-        <span v-if="!isCardValid" class="error-message">信用卡號格式不正確</span>
-      </div>
-      <button @click="checkout" :disabled="isCheckoutDisabled" class="checkout-button">結帳</button>
-    </div>
-    <p v-else>尚未添加任何商品到購物車。</p>
   </div>
 </template>
 
@@ -88,11 +55,7 @@
         restaurants: [],
         menu: [],
         cart: [],
-        creditCardNumber: '',
-        paymentMethod: 'cash',  // 預設值設定為 'cash'
-        isCardValid: true,
-        loadingMenu: false, 
-        loadingCheckout: false, 
+        loadingMenu: false,  
         isLoggedIn: false, // 是否已登入
         token: null, // 儲存 JWT token（若登入）
         userId: null, // 用戶 ID (可從登入時設置)
@@ -294,23 +257,21 @@
 
       // 添加商品到購物車
       addToCart(item) {
-        const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const existingItem = cart.find((cartItem) => cartItem.id === item.id);
         if (existingItem) {
-          existingItem.quantity += 1; // 若商品已存在，數量+1
+          existingItem.quantity += 1;
         } else {
-          this.cart.push({ ...item, quantity: 1 }); // 新商品加入購物車
+          cart.push({ ...item, quantity: 1 });
         }
+        localStorage.setItem("cart", JSON.stringify(cart));
+        this.updateCartCount();
+        alert("添加成功！");
       },
 
-      // 從購物車中移除商品
-      removeFromCart(index) {
-        this.cart.splice(index, 1); // 刪除指定索引的商品
-      },
-
-      // 驗證信用卡號格式
-      validateCard() {
-        const regex = /^[0-9]{16}$/; // 基本的信用卡號驗證，16位數字
-        this.isCardValid = regex.test(this.creditCardNumber);
+      updateCartCount() {
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        this.cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
       },
      
       // 點擊餐廳資訊按鈕，跳轉到餐廳詳細頁
@@ -322,60 +283,11 @@
           console.error("餐廳資料無效");
         }
       },
-
-      // 執行結帳操作
-      async checkout() {
-        if (!this.cart.length) {
-          alert("購物車為空，無法結帳");
-          return;
-        }
-
-        // 檢查是否登入，未登入則跳轉至登入頁面
-        if (!this.isLoggedIn) {
-          alert("請先登入！");
-          return;
-        }
-
-        try {
-          // 構造要發送的訂單數據
-          const orderData = {
-            user_id: this.userId, // 傳遞用戶 ID
-            cart: this.cart.map(item => ({
-              info_id: item.id, // 商品的 ID
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-          };
-
-          // 設定請求頭部（包含 Token）
-          const headers = {};
-          if (this.isLoggedIn && this.token) {
-            headers.Authorization = `Bearer ${this.token}`;
-          }
-
-          // 發送 POST 請求到後端
-          const response = await axios.post("http://127.0.0.1:5000/checkout", orderData, { headers });
-
-          if (response.status === 200) {
-            alert("結帳成功！");
-            this.cart = []; // 清空購物車
-          } else {
-            alert("結帳失敗：" + (response.data.error || "未知錯誤"));
-          }
-        } catch (error) {
-          console.error("結帳過程中發生錯誤：", error.response?.data || error.message);
-          alert("結帳過程中發生錯誤，請稍後再試。");
-        }
-      },
     },
 
     // 頁面加載時，根據選擇的主類別加載餐廳
     mounted() {
       this.fetchRestaurants(this.maincat_selected);
-      if (!this.paymentMethod) {
-        this.paymentMethod = 'cash';
-      }
     },
   };
 </script>

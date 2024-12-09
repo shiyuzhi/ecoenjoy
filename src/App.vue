@@ -45,10 +45,18 @@
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
-         <!-- Home 按鈕 -->
-        <router-link to="/">
-          <button class="home-btn">首頁</button>
-        </router-link>
+        <div class="auth-buttons">
+          <!-- 購物車 按鈕 -->
+          <router-link to="/checkout">
+            <div class="cart-btn">
+              🛒 {{ cartCount }}
+            </div>
+          </router-link>
+          <!-- Home 按鈕 -->
+          <router-link to="/">
+            <button class="home-btn">首頁</button>
+          </router-link>
+        </div>
       </header>
 
       <div class="content">
@@ -456,14 +464,25 @@
   margin: 0.5em; /* 讓按鈕之間有些間距 */
 }
 
+.cart-btn {
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgb(254, 254, 254);
+  background-color: #076785;
+  transition: background-color 0.3s, transform 0.3s ease;
+}
 
-.auth-buttons button:hover, .home-btn:hover {
+.auth-buttons button:hover, .home-btn:hover ,.cart-btn:hover{
   background-color: #fff; 
   transform: translateY(-4px);  /* 按鈕向上浮動 */
 }
 
 
-.auth-buttons button:focus, .home-btn:focus {
+.auth-buttons button:focus, .home-btn:focus ,.cart-btn:focus{
   outline: none;
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);  
 }

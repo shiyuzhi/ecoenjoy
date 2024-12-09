@@ -16,14 +16,12 @@
     <div class="suggestions">
       <h2>建議食物清單</h2>
       <ul class="food-list">
-        <li
-          v-for="food in recommendations"
-          :key="food.name"
-          @click="selectFood(food)"
-        >
-          🍴 {{ food.name }} - {{ food.restaurant_name }}
+        <li v-for="food in recommendations" :key="food.name">
+          <span @click="selectFood(food)">
+            🍴 {{ food.name }} - {{ food.restaurant_name }}
+          </span>
+          <button @click="addToCart(food)">加入購物車</button>
         </li>
-        
       </ul>
     </div>
 
@@ -77,6 +75,9 @@ export default {
     const comments = ref([]);
     const loadingComments = ref(false);
     const isModalOpen = ref(false); // 控制模態框開關
+    const token = ref(localStorage.getItem("token")); // 用戶 Token
+    const userId = ref(null); // 用戶 ID
+    const cartCount = ref(0); // 購物車數量
 
     const fetchRecommendations = async () => {
       try {
@@ -118,6 +119,26 @@ export default {
       comments.value = [];
     };
 
+    // 添加商品到購物車
+    const addToCart = (item) => {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const existingItem = cart.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({ ...item, quantity: 1 });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCartCount();
+      alert("添加成功！");
+    };
+
+    // 更新購物車數量
+    const updateCartCount = () => {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      cartCount.value = cart.reduce((sum, item) => sum + item.quantity, 0);
+    };
+
     const likeComment = async (commentId) => {
       try {
         const response = await axios.post(
@@ -148,6 +169,11 @@ export default {
       isModalOpen,
       selectFood,
       closeModal,
+      addToCart,
+      updateCartCount,
+      token,
+      userId,
+      cartCount,
       likeComment,
     };
   },
