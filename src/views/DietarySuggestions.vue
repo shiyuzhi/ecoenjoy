@@ -227,7 +227,7 @@ export default {
     list-style-type: none;
     padding: 0;
   }
-  
+
   .food-list li {
     background-color: #e9ecef;
     border-radius: 5px;
@@ -235,11 +235,19 @@ export default {
     margin: 5px 0;
     cursor: pointer;
     transition: background-color 0.3s;
+    display: flex; /* 使用 Flexbox 來排列內容 */
+    justify-content: space-between; /* 讓文字與按鈕分開 */
+    align-items: center; /* 垂直置中對齊內容 */
   }
-  
+
   .food-list li:hover {
     background-color: #d6d6d6;
   }
+
+  .food-list li button {
+    margin-left: 30px; /* 按鈕與文字之間的距離 */
+  }
+
   
   /* 模態框背景 */
   .modal-overlay {
