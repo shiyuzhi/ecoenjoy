@@ -22,21 +22,34 @@
     </div>
     <p v-else>請選擇一間餐廳以查看菜單。</p>
 
-    <div v-if="showCommentsModal" class="comments-modal">
+    <div v-if="showCommentsModal" class="modal">
       <div class="modal-content">
-        <h3>{{ selectedMenuItem.name }} 的評論</h3>
-        <div v-if="selectedMenuItem.comments.length === 0" class="no-comments-message">
-          <p>目前還沒評論喔！來第一個留言吧！</p>
+        <!-- 左邊：菜品資訊 -->
+        <div class="modal-left">
+          <h2>{{ selectedMenuItem?.name }}</h2>
+          <p>價格：{{ selectedMenuItem?.price }} 元</p>
+          <p>熱量：{{ selectedMenuItem?.calories }} 大卡</p>
+          <p>蛋白質：{{ selectedMenuItem?.protein }} 克</p>
+          <p>脂肪：{{ selectedMenuItem?.fat }} 克</p>
+          <p>碳水化合物：{{ selectedMenuItem?.carbo }} 克</p>
+          <img :src="selectedMenuItem?.img_url" alt="菜品圖片" />
         </div>
-        <div v-else class="comments-container">
-          <ul>
-            <li v-for="(comment, index) in selectedMenuItem.comments" :key="index" class="comment-card">
-              <p class="comment-user"><strong>{{ comment.user.username }}</strong>: <span class="comment-text">{{ comment.data }}</span></p>
-              <div class="comment-meta"><span>👍 {{ comment.likes }} 喜歡</span> | <span>💬 {{ comment.replies }} 回覆</span></div>
+    
+        <!-- 右邊：評論列表 -->
+        <div class="modal-right">
+          <h3>評論</h3>
+          <div v-if="loadingComments">加載中...</div>
+          <ul v-else>
+            <li v-for="comment in comments" :key="comment.id">
+              <p><strong>{{ comment.user.username }}：</strong> {{ comment.data }}</p>
+              <button @click="likeComment(comment.id)">👍 {{ comment.likes }}</button>
+              <span>回覆數: {{ comment.replies }}</span>
             </li>
           </ul>
         </div>
-        <button @click="closeCommentsModal" class="close-modal-button">關閉</button>
+    
+        <!-- 關閉按鈕 -->
+        <button class="close-button" @click="closeCommentsModal">關閉</button>
       </div>
     </div>
   </div>
@@ -59,13 +72,13 @@
         isLoggedIn: false, // 是否已登入
         token: null, // 儲存 JWT token（若登入）
         userId: null, // 用戶 ID (可從登入時設置)
-        showCommentsModal: false, // 控制評論模態框顯示
-        selectedMenuItem: null, // 當前選擇的菜品
-        showCommentsModal: false, // 控制評論模態框顯示
-        selectedMenuItem: null, // 當前選擇的菜品
-        newComment: '', // 儲存用戶新寫的評論
-      };
-    },
+        showCommentsModal: false, 
+        selectedMenuItem: null, 
+        comments: [], 
+        loadingComments: false, 
+        showFoodModal: false, 
+        };
+     },
 
     created() {
       // 嘗試從 localStorage 載入登入狀態
@@ -100,145 +113,61 @@
       maincat_selected(newMaincat) {
         this.fetchRestaurants(newMaincat);
       },
+      creditCardNumber(newCardNumber) {
+        const cardPattern = /^[0-9]{16}$/; // 假設信用卡號為16位數字
+        this.isCardValid = cardPattern.test(newCardNumber);
+      },
     },
 
+    
     methods: {
-      // 查看評論
-      async viewComments(item) {
-        this.selectedMenuItem = { ...item, comments: [] }; // 初始化當前菜品數據
-
+      async fetchComments(foodId) {
+        this.loadingComments = true; // 開始加載評論
         try {
-          const response = await axios.get(`http://127.0.0.1:5000/api/comments/store/${this.selectedMenuItem.id}`);
-          if (response.status === 200) {
-            // 如果返回的評論是空數組
-            if (response.data.length === 0) {
-              this.selectedMenuItem.comments = []; // 空評論
-              this.noCommentsMessage = "目前還沒評論喔！來第一個留言吧！";
-            } else {
-              this.selectedMenuItem.comments = response.data; // 設置評論數據
-              this.noCommentsMessage = ""; // 清除消息
-            }
-          } else {
-            console.error("評論加載失敗:", response.data.message);
-            this.noCommentsMessage = "無法加載評論，請稍後再試。";
-          }
+          const response = await axios.get(`/api/comments/store/${foodId}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          });
+          
+          const responseData = response.data;
+          this.comments = responseData.comments || []; // 提取評論列表
+          this.selectedMenuItem = {
+            ...responseData.food,
+            comments: responseData.comments, // 可選：直接將評論綁定至菜品
+          };
         } catch (error) {
-          console.error("獲取評論時發生錯誤:", error.message || error);
-          this.noCommentsMessage = "獲取評論時發生錯誤。";
+          console.error("Error fetching comments:", error);
+          this.comments = []; // 發生錯誤時清空評論
+          this.selectedMenuItem = null; // 清空菜品資訊
         } finally {
-          this.showCommentsModal = true; // 顯示模態框
+          this.loadingComments = false; // 完成加載
         }
       },
+      
+      async likeComment(commentId) {
+        const token = localStorage.getItem("token");
 
-      // 提交新評論
-      async submitComment() {
-      if (!this.isLoggedIn) {
-        alert("請先登入才能提交評論！");
-        return; // 用戶未登入，阻止評論提交
-      }
-
-      if (!this.newComment.trim()) {
-        alert("請輸入評論內容！");
-        return;
-      }
-
-    const commentData = {
-      user_id: this.userId, // 用戶 ID
-      menu_item_id: this.selectedMenuItem.id, // 當前菜品 ID
-      comment: this.newComment, // 用戶輸入的評論內容
-    };
-
-    try {
-      const response = await axios.post("http://127.0.0.1:5000/api/comments", commentData, {
-        headers: { Authorization: `Bearer ${this.token}` }
-      });
-
-      if (response.status === 200) {
-        this.selectedMenuItem.comments.push(response.data); // 更新菜品的評論
-        this.newComment = ''; // 清空評論框
-      } else {
-        console.error("評論提交失敗:", response.data.message);
-      }
-    } catch (error) {
-      console.error("提交評論時發生錯誤:", error.message || error);
-    }
-  },
-
-      // 編輯評論（僅限登入用戶）
-      async editComment(comment) {
-        if (!this.isLoggedIn) {
-          alert("請先登入才能編輯評論！");
-          return; // 用戶未登入，阻止編輯
+        if (!token) {
+          alert("請先登入才能點讚！");
+          return;  // 沒有 token 時終止函數
         }
 
-        // 這裡可以加入編輯邏輯，根據需要提供編輯功能
-        // 例如，彈出編輯框，並提交修改後的評論
-        const editedComment = prompt("請編輯您的評論：", comment.comment);
-        if (editedComment !== null && editedComment.trim() !== '') {
-          try {
-            const response = await axios.put(`http://127.0.0.1:5000/api/comments/${comment.id}`, {
-              comment: editedComment
-            }, {
-              headers: { Authorization: `Bearer ${this.token}` }
-            });
-
-            if (response.status === 200) {
-              comment.comment = editedComment; // 更新評論內容
-            } else {
-              console.error("評論編輯失敗:", response.data.message);
-            }
-          } catch (error) {
-            console.error("編輯評論時發生錯誤:", error.message || error);
-          }
-        }
-      },
-
-      // 刪除評論（僅限登入用戶）
-      async deleteComment(comment) {
-        if (!this.isLoggedIn) {
-          alert("請先登入才能刪除評論！");
-          return; // 用戶未登入，阻止刪除
-        }
-
-        const confirmDelete = confirm("您確定要刪除此評論嗎？");
-        if (confirmDelete) {
-          try {
-            const response = await axios.delete(`http://127.0.0.1:5000/api/comments/${comment.id}`, {
-              headers: { Authorization: `Bearer ${this.token}` }
-            });
-
-            if (response.status === 200) {
-              const index = this.selectedMenuItem.comments.findIndex(c => c.id === comment.id);
-              if (index !== -1) {
-                this.selectedMenuItem.comments.splice(index, 1); // 刪除評論
-              }
-            } else {
-              console.error("評論刪除失敗:", response.data.message);
-            }
-          } catch (error) {
-            console.error("刪除評論時發生錯誤:", error.message || error);
-          }
-        }
-      },
-
-      // 關閉評論模態框
-      closeCommentsModal() {
-        this.showCommentsModal = false;
-        this.selectedMenuItem = null; // 清空選擇的菜品數據
-      },
-      // 獲取餐廳資料
-      async fetchRestaurants(maincatId) {
-        if (!maincatId) return this.restaurants = [];
-        
         try {
-          const response = await axios.get(`http://127.0.0.1:5000/subcat/${maincatId}`);
-          this.restaurants = response.data;
+          const response = await axios.post(
+            `/api/comments/like/${commentId}`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          // 更新評論的點讚數
+          const comment = this.comments.find((c) => c.id === commentId);
+          if (comment) {
+            comment.likes = response.data.likes;
+          }
         } catch (error) {
-          console.error("獲取餐廳資料失敗:", error);
-          this.restaurants = [];
+          console.error("Error liking comment:", error);
         }
       },
-
       // 根據選擇的餐廳獲取菜單
       async fetchMenu() {
         if (!this.selectedRestaurant) return;
@@ -273,7 +202,7 @@
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
         this.cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
       },
-     
+    
       // 點擊餐廳資訊按鈕，跳轉到餐廳詳細頁
       viewStore(restaurantName) {
         const selected = this.restaurants.find(r => r.name === restaurantName);
@@ -284,13 +213,13 @@
         }
       },
     },
-
     // 頁面加載時，根據選擇的主類別加載餐廳
     mounted() {
       this.fetchRestaurants(this.maincat_selected);
     },
   };
 </script>
+
 
 
 
@@ -518,100 +447,183 @@ h3 {
 }
 
 /* 評論模態框 */
-.comments-modal {
+
+.modal {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* 半透明黑色遮罩 */
   display: flex;
-  justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.5); /* 加深背景色 */
+  justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* 半透明黑色遮罩 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* 模態框內容 */
 .modal-content {
-  background: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  max-width: 700px;
-  width: 90%;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  animation: slideIn 0.5s ease-out;
-  border-left: 5px solid #5c6bc0; /* 加入顏色條 */
+  display: flex;
+  background: linear-gradient(135deg, #fdd297, #ffffff, #82d1ea); /* 三色漸層背景 */
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 90%;
+  width: 800px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  position: relative;
+  max-height: 80%;
+  overflow: hidden;
+  color: #000000; /* 白色文字 */
 }
 
-@keyframes slideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* 左側：菜品資訊 */
+.modal-left {
+  flex: 1;
+  padding-right: 20px;
+  border-right: 2px solid rgba(255, 255, 255, 0.4); /* 半透明白色分隔線 */
+  text-align: center;
 }
 
-.comments-container {
-  margin-top: 20px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 10px;
+.modal-left img {
+  width: 100%;
+  border-radius: 15px;
+  margin-top: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.comment-card {
-  background: #f4f4f9;
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  border-left: 5px solid #ff4081; /* 加入顏色條 */
+.modal-left img:hover {
+  transform: scale(1.05); /* 懸停放大效果 */
+  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.5); /* 增加陰影 */
 }
 
-.comment-card:hover {
-  transform: translateX(7px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  border-left: 5px solid #ff5722; /* 增加滑鼠懸停效果 */
-}
-
-.comment-user {
-  font-size: 1.1rem;
+.highlight {
+  color: #ffe57f;
   font-weight: bold;
-  color: #2f3b52;
-  margin-bottom: 5px;
 }
 
-.comment-text {
-  color: #666;
-  font-size: 0.95rem;
-  line-height: 1.5;
+/* 右側：評論列表 */
+.modal-right {
+  flex: 2;
+  padding-left: 20px;
+  overflow-y: auto;
 }
 
-.comment-meta {
+.modal-right ul {
+  list-style: none;
+  padding: 0;
+}
+
+.modal-right li {
+  background: rgba(255, 255, 255, 0.2); /* 半透明背景 */
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.modal-right li:hover {
+  box-shadow: 0 6px 15px rgba(255, 255, 255, 0.4); /* 懸停時陰影加強 */
+  transform: translateY(-5px); /* 懸停時向上微移 */
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.comment-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
   margin-top: 10px;
-  font-size: 0.85rem;
-  color: #888;
 }
 
-.close-modal-button {
-  background-color: #1e88e5;
-  color: white;
-  padding: 12px 25px;
-  font-size: 1.1rem;
+.like-button,
+.reply-button {
+  padding: 5px 15px;
   border: none;
-  border-radius: 50px; /* 圓形按鈕 */
+  border-radius: 12px;
   cursor: pointer;
-  margin-top: 30px;
-  transition: background-color 0.3s, transform 0.2s;
+  font-size: 14px;
+  transition: background 0.3s ease, transform 0.2s;
 }
 
-.close-modal-button:hover {
-  background-color: #1565c0;
-  transform: scale(1.05); /* 按鈕放大效果 */
+.like-button {
+  background: #ff8a65; /* 橙色背景 */
+  color: #fff;
 }
 
+.like-button:hover {
+  background: #ff7043; /* 濃橙色 */
+  transform: scale(1.1); /* 懸停時放大 */
+}
 
+.reply-button {
+  background: #4fc3f7; /* 淺藍色背景 */
+  color: #fff;
+}
 
+.reply-button:hover {
+  background: #29b6f6; /* 深藍色 */
+  transform: scale(1.1); /* 懸停時放大 */
+}
+
+/* 按鈕樣式 */
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 10px;
+  background: #050202;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.close-button:hover {
+  background: #8f042094; /* 更深的紅色 */
+  transform: scale(1.2); /* 懸停時放大 */
+}
+
+/* 動畫效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 </style>

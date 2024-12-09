@@ -444,6 +444,27 @@ def update_daily_log():
     db.session.commit()
     return jsonify({"message": "Food added to log successfully"}), 200
 
+# 食物資料
+@app.route('/api/foods/<int:id>', methods=['GET'])
+def get_food(id):
+    food = Food.query.get(id)
+    if food is None:
+        return jsonify({"error": "食物資料不存在"}), 404
+    
+    food_data = {
+        "id": food.id,
+        "name": food.name,
+        "price": food.price,
+        "carbo": food.carbo,
+        "protein": food.protein,
+        "fat": food.fat,
+        "calories": food.calories,
+        "score": food.score,
+        "img_url": food.img_url,
+        "subcat_id": food.subcat_id,
+    }
+    return jsonify(food_data)
+
 
 #食物分類
 @app.route('/foods', methods=['GET'])
@@ -587,16 +608,35 @@ def get_comments_by_store(food_id):
         # 輸出收到的 food_id
         logging.info(f"Received food_id: {food_id}")
 
+        # 查詢符合 food_id 的餐點
+        food = Food.query.get(food_id)
+        
+        # 如果找不到餐點，返回 404
+        if not food:
+            return jsonify({'message': 'Food not found'}), 404
+
         # 查詢符合 food_id 的評論
         comments = Comment.query.filter_by(food_id=food_id).all()
 
-        # 若找不到評論，返回空列表
-        if not comments:
-            return jsonify([]), 200  # 返回空列表，而不是 404
+        # 組裝返回的結果
+        result = {
+            'food': {
+                'id': food.id,
+                'name': food.name,
+                'price': food.price,
+                'carbo': food.carbo,
+                'protein': food.protein,
+                'fat': food.fat,
+                'calories': food.calories,
+                'score': food.score,
+                'img_url': food.img_url
+            },
+            'comments': []
+        }
 
-        result = []
+        # 將評論資料加入結果
         for comment in comments:
-            result.append({
+            result['comments'].append({
                 'id': comment.id,
                 'user': {
                     'id': comment.user.id if comment.user else None,
@@ -616,6 +656,7 @@ def get_comments_by_store(food_id):
     except Exception as e:
         logging.error(f"Error fetching comments: {str(e)}")
         return jsonify({'message': 'Internal Server Error'}), 500
+
 
 # 點讚
 @app.route('/api/comments/like/<int:comment_id>', methods=['POST'])
