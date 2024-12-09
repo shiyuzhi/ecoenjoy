@@ -847,77 +847,93 @@ def get_recommendations():
     user = User.query.filter_by(id=current_user).first()
     if not user:
         return jsonify({"error": "用戶不存在"}), 403
+
     # 計算日期範圍：前天開始到今天結束
     now = datetime.now(timezone.utc)
     start_of_range = (now - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_range = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
     # 查詢範圍內的飲食日誌
     diet_logs = DietLog.query.filter(
         DietLog.user_id == user.id,
         DietLog.log_date >= start_of_range.date(),
         DietLog.log_date <= end_of_range.date()
     ).all()
+
     # 查詢範圍內的歷史訂單
     records = Record.query.filter(
         Record.user_id == user.id,
         Record.timestamp >= start_of_range,
         Record.timestamp <= end_of_range
     ).all()
+
     # 總結範圍內的營養攝取數據
     total_carbs = total_protein = total_fat = total_calories = 0
+
     # 加上日誌數據
     for log in diet_logs:
         total_carbs += log.carbs
         total_protein += log.protein
         total_fat += log.fat
         total_calories += log.calories
+
     # 加上歷史訂單的營養數據
     for record in records:
         food = Food.query.get(record.info_id)
         if food:
-            total_carbs += food.carbo
-            total_protein += food.protein
-            total_fat += food.fat
-            total_calories += food.calories
-    # 定義每日營養建議值（假設建議值是按天計算，需乘以2）
+            total_carbs += food.carbo or 0
+            total_protein += food.protein or 0
+            total_fat += food.fat or 0
+            total_calories += food.calories or 0
+
+    # 定義每日營養建議值（假設建議值是按天計算，需乘以3）
     recommended_intake = {
-        "carbs": 300 * 2,  # 克
-        "protein": 50 * 2,  # 克
-        "fat": 70 * 2,      # 克
-        "calories": 2000 * 2  # 千卡
+        "carbs": 206 * 3,  # 克
+        "protein": 56 * 3,  # 克
+        "fat": 50 * 3,      # 克
+        "calories": 1500 * 3  # 千卡
     }
-    # 計算缺口
+
+    # 計算缺口和剩餘餘量
     deficits = {
         "carbs": max(0, recommended_intake["carbs"] - total_carbs),
         "protein": max(0, recommended_intake["protein"] - total_protein),
         "fat": max(0, recommended_intake["fat"] - total_fat),
         "calories": max(0, recommended_intake["calories"] - total_calories),
     }
+    surplus = {
+        "carbs": max(0, total_carbs - recommended_intake["carbs"]),
+        "protein": max(0, total_protein - recommended_intake["protein"]),
+        "fat": max(0, total_fat - recommended_intake["fat"]),
+        "calories": max(0, total_calories - recommended_intake["calories"]),
+    }
+
     # 推薦食物
     recommendations = []
-    if any(value > 0 for value in deficits.values()):  # 若有缺口則推薦
-        foods = Food.query.all()
-        for food in foods:
-            # 如果食物的營養值為 None，給它默認值（例如 0），或直接跳過
-            carbo = food.carbo or 0
-            protein = food.protein or 0
-            fat = food.fat or 0
-            calories = food.calories or 0
-            if (carbo >= deficits["carbs"] * 0.3 or
-                protein >= deficits["protein"] * 0.3 or
-                fat >= deficits["fat"] * 0.3 or
-                calories >= deficits["calories"] * 0.3):
-                recommendations.append({
-                    "id": food.id,
-                    "name": food.name,
-                    "restaurant_name": food.subcat.name,
-                    "price": food.price,
-                    "carbs": food.carbo,
-                    "protein": food.protein,
-                    "fat": food.fat,
-                    "calories": food.calories,
-                    "img_url": food.img_url
-                })
+    foods = Food.query.all()
+    for food in foods:
+        carbo = food.carbo or 0
+        protein = food.protein or 0
+        fat = food.fat or 0
+        calories = food.calories or 0
+    
+        # 避免推薦過量的食物
+        if (carbo <= deficits["carbs"] + 20 and 
+            protein <= deficits["protein"] + 5 and 
+            fat <= deficits["fat"] + 5 and 
+            calories <= deficits["calories"] + 150):
+            recommendations.append({
+                "id": food.id,
+                "name": food.name,
+                "restaurant_name": food.subcat.name,
+                "price": food.price,
+                "carbs": food.carbo,
+                "protein": food.protein,
+                "fat": food.fat,
+                "calories": food.calories,
+                "img_url": food.img_url
+            })
+
     return jsonify({
         "range": {
             "start": start_of_range.isoformat(),
@@ -930,11 +946,9 @@ def get_recommendations():
             "calories": total_calories,
         },
         "deficits": deficits,
+        "surplus": surplus,
         "recommendations": recommendations
     }), 200
-
-
-
 
 if __name__ == '__main__':
     with app.app_context():

@@ -5,9 +5,24 @@
     <div class="nutrition-summary">
       <h2>您近三日的營養攝取分析</h2>
       <ul>
-        <li v-for="(value, key) in deficits" :key="key">
-          <span :class="{ 'highlight-deficit': value > 0 }">
-            {{ key }}: {{ value > 0 ? `缺少 ${value}` : '充足' }}
+        <!-- 顯示缺少的營養數據 -->
+        <li v-for="(value, key) in deficits" :key="'deficit-' + key" >
+          <span class="highlight-deficit" v-if="value > 0">
+            {{ key }}: 缺少 {{ value.toFixed(2) }} 克
+          </span>
+        </li>
+        
+        <!-- 顯示超過的營養數據 -->
+        <li v-for="(value, key) in surplus" :key="'surplus-' + key" >
+          <span class="highlight-surplus" v-if="value > 0">
+            {{ key }}: 超過 {{ value.toFixed(2) }} 克
+          </span>
+        </li>
+
+        <!-- 如果數據均衡 -->
+        <li v-if="isBalanced.value">
+          <span class="highlight-sufficient">
+            營養攝取均衡，保持良好飲食習慣！
           </span>
         </li>
       </ul>
@@ -70,6 +85,8 @@ import axios from "axios";
 export default {
   setup() {
     const deficits = ref({});
+    const surplus = ref({});
+    const isBalanced = ref({ value: false }); // 是否顯示均衡訊息
     const recommendations = ref([]);
     const selectedFood = ref(null);
     const comments = ref([]);
@@ -86,7 +103,12 @@ export default {
         const response = await axios.get("/api/recommendations", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        deficits.value = response.data.deficits;
+        // 如果後端返回的字段格式正確，將數據存入 deficits 和 surplus
+        deficits.value = response.data.deficits || {};
+        surplus.value = response.data.surplus || {};
+        // 設定是否顯示「營養攝取均衡」訊息
+        isBalanced.value = !Object.values(deficits).some(v => v > 0) && !Object.values(surplus).some(v => v > 0);
+
         recommendations.value = response.data.recommendations;
       } catch (error) {
         console.error("Error fetching recommendations:", error);
@@ -180,6 +202,8 @@ export default {
 
     return {
       deficits,
+      surplus,
+      isBalanced,
       recommendations,
       selectedFood,
       comments,
@@ -216,11 +240,33 @@ export default {
   }
   
   .nutrition-summary {
-    margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  }
+
+  .nutrition-summary ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .nutrition-summary li {
+    margin: 8px 0;
   }
   
   .highlight-deficit {
-    color: red;
+    color: #d9534f; /* 紅色：表示缺少 */
+    font-weight: bold;
+  }
+
+  .highlight-surplus {
+    color: #f0ad4e; /* 橙色：表示過量 */
+    font-weight: bold;
+  }
+
+  .highlight-sufficient {
+    color: #5cb85c; /* 綠色：表示充足 */
+    font-weight: bold;
   }
   
   .food-list {

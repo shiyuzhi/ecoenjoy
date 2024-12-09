@@ -3,7 +3,7 @@ import './style.css';
 import App from './App.vue';
 import router from './router'; // 引入路由
 import axios from 'axios';
-import i18n from './i18n';
+//import i18n from './i18n';
 
 axios.defaults.baseURL = 'http://127.0.0.1:5000'; // Flask 伺服器的網址
 
@@ -26,5 +26,5 @@ axios.interceptors.request.use(
 // 創建應用並掛載路由，並註冊 i18n
 createApp(App)
   .use(router)
-  .use(i18n)  // 註冊 i18n
+  //.use(i18n)  // 註冊 i18n
   .mount('#app');
