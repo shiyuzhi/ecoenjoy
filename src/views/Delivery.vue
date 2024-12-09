@@ -92,34 +92,13 @@
       }
     },
 
-    computed: {
-      // 計算購物車的總價
-      totalPrice() {
-        return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-      },
-
-      // 計算結帳按鈕是否禁用
-      isCheckoutDisabled() {
-        if (this.paymentMethod === 'credit_card') {
-          // 信用卡付款時，檢查卡號是否有效
-          return !this.isCardValid || !this.creditCardNumber;
-        }
-        return this.cart.length === 0;
-      },
-    },
-
     watch: {
       // 當 maincat_selected 變動時重新加載餐廳資料
       maincat_selected(newMaincat) {
         this.fetchRestaurants(newMaincat);
       },
-      creditCardNumber(newCardNumber) {
-        const cardPattern = /^[0-9]{16}$/; // 假設信用卡號為16位數字
-        this.isCardValid = cardPattern.test(newCardNumber);
-      },
     },
 
-    
     methods: {
       async fetchComments(foodId) {
         this.loadingComments = true; // 開始加載評論
@@ -168,6 +147,31 @@
           console.error("Error liking comment:", error);
         }
       },
+
+      // 查看評論並打開模態框
+      async viewComments(item) {
+          await this.fetchComments(item.id); // 獲取選中菜品的詳細資訊和評論
+          this.showCommentsModal = true; // 顯示模態框
+      },
+
+      // 關閉模態框
+      closeCommentsModal() {
+        this.showCommentsModal = false;
+        this.selectedMenuItem = null; // 清空當前菜品
+      },
+      // 獲取餐廳資料
+      async fetchRestaurants(maincatId) {
+        if (!maincatId) return this.restaurants = [];
+        
+        try {
+          const response = await axios.get(`http://127.0.0.1:5000/subcat/${maincatId}`);
+          this.restaurants = response.data;
+        } catch (error) {
+          console.error("獲取餐廳資料失敗:", error);
+          this.restaurants = [];
+        }
+      },
+
       // 根據選擇的餐廳獲取菜單
       async fetchMenu() {
         if (!this.selectedRestaurant) return;
