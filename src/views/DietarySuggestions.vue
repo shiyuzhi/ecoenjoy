@@ -3,7 +3,7 @@
     <h1>個人飲食建議</h1>
 
     <div class="nutrition-summary">
-      <h2>您的營養攝取分析</h2>
+      <h2>您近三日的營養攝取分析</h2>
       <ul>
         <li v-for="(value, key) in deficits" :key="key">
           <span :class="{ 'highlight-deficit': value > 0 }">

@@ -4,7 +4,7 @@
 
     <!-- 營養總和 -->
     <div class="nutrition-summary" v-if="totals">
-      <h2>今日營養總和</h2>
+      <h2>近三日營養總和</h2>
       <p>碳水化合物：{{ Math.round(totals.carbo) }} g</p>
       <p>蛋白質：{{ Math.round(totals.protein) }} g</p>
       <p>脂肪：{{ totals.fat }} g</p>
