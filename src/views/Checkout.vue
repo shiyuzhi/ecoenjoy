@@ -134,7 +134,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .order-summary {
   background-color: #f7faff;
   padding: 25px;
