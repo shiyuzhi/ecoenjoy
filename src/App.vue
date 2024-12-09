@@ -46,10 +46,18 @@
         <div class="search-bar">
           <input type="text" placeholder="搜尋">
         </div>
-         <!-- Home 按鈕 -->
-        <router-link to="/">
-          <button class="home-btn">首頁</button>
-        </router-link>
+        <div class="auth-buttons">
+          <!-- 購物車 按鈕 -->
+          <router-link to="/checkout">
+            <div class="cart-btn">
+              🛒 {{ cartCount }}
+            </div>
+          </router-link>
+          <!-- Home 按鈕 -->
+          <router-link to="/">
+            <button class="home-btn">首頁</button>
+          </router-link>
+        </div>
       </header>
 
       <div class="content">
@@ -457,24 +465,34 @@
   margin: 0.5em; /* 讓按鈕之間有些間距 */
 }
 
-
-.auth-buttons button:hover, .home-btn:hover {
-  background-color: #fff; 
-  transform: translateY(-4px);  /* 按鈕向上浮動 */
-}
-
-
-.auth-buttons button:focus, .home-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);  
-}
-
-
+/* 調整整體容器 */
 .auth-buttons {
   display: flex;
-  justify-content: center; /* 中央對齊 */
-  gap: 1em;  /* 按鈕之間的間距 */
+  align-items: center;
+  justify-content: flex-end; /* 讓按鈕靠右 */
+  padding: 10px;
 }
+
+/* 設定購物車按鈕的外觀 */
+.cart-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0; /* 背景顏色 */
+  border-radius: 5px; /* 圓角 */
+  padding: 10px 15px; /* 按鈕內邊距 */
+  font-size: 18px; /* 文字大小 */
+  font-weight: bold;
+  color: #333; /* 文字顏色 */
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* 增加過渡效果 */
+}
+
+.cart-btn:hover {
+  background: linear-gradient(#8cc3d7,#fff); /* 橙色的懸停效果 */
+  color: white; 
+}
+
 
 .home-btn {
   background-color: #fff9f8;  
