@@ -11,7 +11,7 @@
       <nav aria-label="主要導航">
         <ul>
           <li><router-link to="/profile">會員資料</router-link></li>
-          <li><router-link to="/nutrition-query">營養需求</router-link></li>
+          <li><router-link to="/nutrition-query">餐飲推薦</router-link></li>
           <li><router-link to="/dietary-suggestions">個人飲食建議</router-link></li>
           <li><router-link to="/diet-log">飲食日誌</router-link></li>
           <li><router-link to="/history-diet">歷史飲食紀錄</router-link></li>
@@ -65,7 +65,7 @@
         <H2>餐廳推薦</H2>
         <div class="restaurant-list">
           <!-- 列出每家餐廳 -->
-          <div class="restaurant-item" v-for="restaurant in restaurants" :key="restaurant.id">
+          <div class="restaurant-item" v-for="restaurant in restaurants" :key="restaurant.id" >
             <div class="image-container">
               <img v-if="restaurant && restaurant.img_url" :src="`/store/${restaurant.img_url}`" :alt="restaurant.name" class="restaurant-image" />
             </div>

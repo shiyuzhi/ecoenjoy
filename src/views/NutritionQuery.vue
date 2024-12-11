@@ -1,7 +1,7 @@
 <template>
   <!-- 營養查詢區域 -->
   <div class="nutrition-query-container">
-    <h1 class="nutrition-title">營養需求</h1>
+    <h1 class="nutrition-title">餐飲營養需求</h1>
 
     <!-- 營養素選擇區域 -->
     <div>

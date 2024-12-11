@@ -220,6 +220,7 @@
     // 頁面加載時，根據選擇的主類別加載餐廳
     mounted() {
       this.fetchRestaurants(this.maincat_selected);
+
     },
   };
 </script>
