@@ -141,17 +141,21 @@
   
   .nutrition-field {
     display: flex;
-    align-items: center;
+    align-items: center; 
     margin-bottom: 18px;
+    gap: 20px; 
+    margin-left: 40px;
   }
   
   .nutrition-field label {
-    flex: 1;
+    flex: 1; 
     font-size: 18px;
-    color: #ffffff;
+    color: #000000;
     font-weight: 500;
+    margin: 0; 
+    text-align: left;
   }
-  
+
   .nutrition-button {
     padding: 12px 18px;
     border: none;
@@ -160,7 +164,6 @@
     color: white;
     font-size: 16px;
     cursor: pointer;
-    margin-left: 12px;
     transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
     box-shadow: 0 5px 15px rgba(255, 87, 34, 0.4);
   }
@@ -215,4 +218,3 @@
     font-weight: 500;
   }
 </style>
-  
